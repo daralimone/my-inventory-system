@@ -57,10 +57,22 @@ if login():
 
     st.title("📦 គ្រប់គ្រងស្តុក និងលក់ដូរ")
 
-    # --- ១. ផ្នែកស្វែងរកទំនិញ ---
+    # --- ១. ទាញទិន្នន័យ ---
+    conn = sqlite3.connect('business.db')
+    df_all = pd.read_sql_query("SELECT * FROM products", conn)
+    conn.close()
+
+    # --- ២. ផ្នែកដាស់តឿនស្តុកជិតអស់ (Low Stock Alert) ---
+    low_stock_df = df_all[df_all['stock'] <= 5]
+    if not low_stock_df.empty:
+        st.warning(f"⚠️ មានទំនិញចំនួន {len(low_stock_df)} មុខដែលជិតអស់ពីស្តុក (សល់តិចជាង ៥)!")
+        with st.expander("ចុចមើលបញ្ជីទំនិញជិតអស់"):
+            st.table(low_stock_df[['name', 'stock']])
+
+    # --- ៣. ផ្នែកស្វែងរកទំនិញ ---
     search_query = st.text_input("🔍 ស្វែងរកទំនិញតាមឈ្មោះ...", "")
 
-    # --- ២. Sidebar: បញ្ចូលទំនិញថ្មី ---
+    # --- ៤. Sidebar: បញ្ចូលទំនិញថ្មី ---
     st.sidebar.header("📝 បញ្ចូលទិន្នន័យ")
     with st.sidebar.form("add_form", clear_on_submit=True):
         name = st.text_input("ឈ្មោះទំនិញ")
@@ -75,28 +87,29 @@ if login():
                 conn.close()
                 st.rerun()
 
-    # --- ៣. ទាញទិន្នន័យមកបង្ហាញ ---
-    conn = sqlite3.connect('business.db')
-    query = "SELECT * FROM products"
-    if search_query:
-        query = f"SELECT * FROM products WHERE name LIKE '%{search_query}%'"
-    df = pd.read_sql_query(query, conn)
-    conn.close()
-
+    # --- ៥. បង្ហាញតារាងទិន្នន័យតាមការស្វែងរក ---
     st.subheader("📋 បញ្ជីទំនិញបច្ចុប្បន្ន")
-    st.dataframe(df, use_container_width=True)
+    if search_query:
+        display_df = df_all[df_all['name'].str.contains(search_query, case=False)]
+    else:
+        display_df = df_all
+    st.dataframe(display_df, use_container_width=True)
 
-    # --- ៤. មុខងារលុបទំនិញ ---
-    if not df.empty:
+    # --- ៦. មុខងារលុបទំនិញ ---
+    if not df_all.empty:
         st.divider()
-        st.subheader("🗑️ លុបទំនិញចេញ")
-        product_to_delete = st.selectbox("ជ្រើសរើសទំនិញដែលចង់លុប", df['name'])
-        if st.button("បញ្ជាក់ការលុប", type="primary"):
-            conn = sqlite3.connect('business.db')
-            cursor = conn.cursor()
-            cursor.execute("DELETE FROM products WHERE name = ?", (product_to_delete,))
-            conn.commit()
-            conn.close()
-            st.warning(f"បានលុប {product_to_delete} រួចរាល់!")
-            time.sleep(1)
-            st.rerun()
+        col_del1, col_del2 = st.columns([2, 1])
+        with col_del1:
+            product_to_delete = st.selectbox("🗑️ ជ្រើសរើសទំនិញដែលចង់លុប", df_all['name'])
+        with col_del2:
+            st.write(" ") # បង្កើតចន្លោះ
+            st.write(" ")
+            if st.button("បញ្ជាក់ការលុបទំនិញ", type="primary", use_container_width=True):
+                conn = sqlite3.connect('business.db')
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM products WHERE name = ?", (product_to_delete,))
+                conn.commit()
+                conn.close()
+                st.warning(f"បានលុប {product_to_delete}!")
+                time.sleep(1)
+                st.rerun()
