@@ -2,7 +2,7 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 
-# --- ការកំណត់ទំព័រ ---
+# --- ការកំណត់ទំព័រ (ត្រូវតែនៅខាងលើគេបង្អស់) ---
 st.set_page_config(page_title="ប្រព័ន្ធគ្រប់គ្រងស្តង់ដា", layout="wide")
 
 # --- ១. មុខងារបង្កើតតារាងចាំបាច់ក្នុង Database ---
@@ -18,7 +18,7 @@ def init_db():
 
 init_db()
 
-# --- ២. មុខងារ Login (Username & Password) ---
+# --- ២. មុខងារ Login ---
 def login():
     if "logged_in" not in st.session_state:
         st.session_state["logged_in"] = False
@@ -30,18 +30,13 @@ def login():
             username = st.text_input("ឈ្មោះអ្នកប្រើប្រាស់ (Username)")
             password = st.text_input("លេខកូដសម្ងាត់ (Password)", type="password")
             if st.button("ចូលប្រើ", use_container_width=True):
-                # លេខកូដសម្ងាត់ថ្មីរបស់អ្នក
                 if username == "daralim.one" and password == "aSd.12345678":
                     st.session_state["logged_in"] = True
                     st.rerun()
                 else:
                     st.error("ឈ្មោះ ឬ លេខកូដមិនត្រឹមត្រូវ!")
         return False
-    else:
-        if st.sidebar.button("ចាកចេញ (Log out)"):
-            st.session_state["logged_in"] = False
-            st.rerun()
-        return True
+    return True
 
 # --- ៣. មុខងារទាញទិន្នន័យ ---
 def get_data():
@@ -50,17 +45,24 @@ def get_data():
     conn.close()
     return df
 
-# --- ៤. ដំណើរការកម្មវិធីចម្បង ---
+# --- ៤. ដំណើរការកម្មវិធីចម្បង (Main App) ---
 if login():
+    # ប៊ូតុង Log out ដាក់ក្នុង Sidebar
+    if st.sidebar.button("ចាកចេញ (Log out)"):
+        st.session_state["logged_in"] = False
+        st.rerun()
+
     st.title("📦 ប្រព័ន្ធគ្រប់គ្រងស្តុក និងលក់ដូរ")
     
-    # --- Sidebar: Form បញ្ចូលគ្រប់យ៉ាងក្នុងប៊ូតុងតែមួយ ---
+    # --- Sidebar: បង្កើត Form សម្រាប់បញ្ចូលគ្រប់យ៉ាង ---
+    # កូដផ្នែកនេះត្រូវតែស្ថិតនៅក្រោម "if login():" និងដកឃ្លាចូលឱ្យត្រឹមត្រូវ
     st.sidebar.header("📝 គ្រប់គ្រងទិន្នន័យ")
     with st.sidebar.form("my_form", clear_on_submit=True):
         st.write("➕ បញ្ចូលទំនិញថ្មី")
         new_name = st.text_input("ឈ្មោះទំនិញ")
         new_qty = st.number_input("ចំនួនក្នុងស្តុក", min_value=0, step=1)
         new_price = st.number_input("តម្លៃលក់ ($)", min_value=0.0, format="%.2f")
+        
         submitted = st.form_submit_button("បញ្ចូលទៅក្នុងប្រព័ន្ធ")
 
         if submitted:
@@ -76,7 +78,7 @@ if login():
             else:
                 st.sidebar.error("⚠️ សូមបញ្ចូលឈ្មោះទំនិញ!")
 
-    # --- តួសេចក្តីកណ្តាល ---
+    # --- តួសេចក្តីកណ្តាល: បង្ហាញតារាង និងលក់ ---
     df_products = get_data()
     tab1, tab2 = st.tabs(["📊 ស្តុកបច្ចុប្បន្ន", "📈 ស្ថិតិលក់"])
 
