@@ -114,4 +114,4 @@ if login():
     with tab2:
         if not df_products.empty:
             st.subheader("ក្រាហ្វិកស្តុក")
-            st.bar_chart(data=df_products, x="name", y="stock")
+            st.bar_chart(data=df_products, x="name", y="stock") 
