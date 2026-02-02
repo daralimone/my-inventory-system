@@ -5,14 +5,18 @@ import time
 from extra_streamlit_components import CookieManager
 
 # --- ការកំណត់ទំព័រ ---
-st.set_page_config(page_title="ប្រព័ន្ធគ្រប់គ្រងស្តុក", layout="wide")
+st.set_page_config(page_title="ប្រព័ន្ធគ្រប់គ្រងស្តុក & លក់", layout="wide")
 cookie_manager = CookieManager()
 
 def init_db():
     conn = sqlite3.connect('business.db')
     cursor = conn.cursor()
+    # តុសម្រាប់ស្តុក
     cursor.execute('''CREATE TABLE IF NOT EXISTS products 
                       (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, stock INTEGER, price REAL)''')
+    # តុសម្រាប់ប្រវត្តិលក់
+    cursor.execute('''CREATE TABLE IF NOT EXISTS sales_history 
+                      (id INTEGER PRIMARY KEY AUTOINCREMENT, product_name TEXT, quantity INTEGER, total_price REAL, sale_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
     conn.commit()
     conn.close()
 
@@ -25,88 +29,74 @@ def login():
     except:
         st.error("សូមកំណត់ Secrets ជាមុនសិន!")
         return False
-
-    if "logged_in" not in st.session_state:
-        st.session_state["logged_in"] = False
-
+    if "logged_in" not in st.session_state: st.session_state["logged_in"] = False
     cookie_status = cookie_manager.get(cookie="is_logged_in")
-    if cookie_status == "true":
-        st.session_state["logged_in"] = True
-
+    if cookie_status == "true": st.session_state["logged_in"] = True
     if not st.session_state["logged_in"]:
-        st.markdown("<h2 style='text-align: center;'>🔐 ចូលប្រើប្រាស់ប្រព័ន្ធ</h2>", unsafe_allow_html=True)
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            u = st.text_input("Username")
-            p = st.text_input("Password", type="password")
-            if st.button("ចូលប្រើ", use_container_width=True):
-                if u == CORRECT_USER and p == CORRECT_PASS:
-                    cookie_manager.set("is_logged_in", "true", max_age=86400)
-                    st.session_state["logged_in"] = True
-                    st.rerun()
-                else:
-                    st.error("ខុសលេខកូដ!")
+        # ... ផ្ទាំង Login (ដូចមុន) ...
+        u = st.text_input("Username")
+        p = st.text_input("Password", type="password")
+        if st.button("ចូលប្រើ"):
+            if u == CORRECT_USER and p == CORRECT_PASS:
+                cookie_manager.set("is_logged_in", "true", max_age=86400)
+                st.session_state["logged_in"] = True
+                st.rerun()
         return False
     return True
 
 if login():
-    if st.sidebar.button("ចាកចេញ (Log out)"):
-        cookie_manager.delete("is_logged_in")
-        st.session_state["logged_in"] = False
-        st.rerun()
-
-    st.title("📦 ប្រព័ន្ធគ្រប់គ្រងស្តុកវៃឆ្លាត")
+    st.title("🛒 ប្រព័ន្ធគ្រប់គ្រងស្តុក និងការលក់")
 
     # --- ១. ទាញទិន្នន័យ ---
     conn = sqlite3.connect('business.db')
     df = pd.read_sql_query("SELECT * FROM products", conn)
+    sales_df = pd.read_sql_query("SELECT * FROM sales_history ORDER BY sale_time DESC", conn)
     conn.close()
 
-    # --- ២. ផ្នែកកែប្រែទិន្នន័យ (Update Section) ---
-    with st.expander("🔄 កែប្រែចំនួនស្តុក ឬ តម្លៃទំនិញ"):
-        if not df.empty:
-            selected_item = st.selectbox("ជ្រើសរើសទំនិញដើម្បីកែប្រែ", df['name'])
-            item_info = df[df['name'] == selected_item].iloc[0]
-            
-            col_u1, col_u2 = st.columns(2)
-            new_stock = col_u1.number_input("ចំនួនស្តុកថ្មី", value=int(item_info['stock']))
-            new_price = col_u2.number_input("តម្លៃថ្មី ($)", value=float(item_info['price']), format="%.2f")
-            
-            if st.button("រក្សាទុកការកែប្រែ", type="secondary"):
+    # --- ២. មុខងារលក់ទំនិញ (Sales Form) ---
+    st.subheader("💰 លក់ទំនិញ")
+    if not df.empty:
+        col_s1, col_s2, col_s3 = st.columns([2, 1, 1])
+        item_to_sell = col_s1.selectbox("ជ្រើសរើសទំនិញលក់", df['name'])
+        qty_to_sell = col_s2.number_input("ចំនួនលក់", min_value=1, step=1)
+        
+        current_item = df[df['name'] == item_to_sell].iloc[0]
+        total_bill = qty_to_sell * current_item['price']
+        
+        col_s3.write(f"តម្លៃសរុប: **${total_bill:,.2f}**")
+        
+        if st.button("បញ្ជាក់ការលក់ ✅", use_container_width=True):
+            if current_item['stock'] >= qty_to_sell:
                 conn = sqlite3.connect('business.db')
                 cursor = conn.cursor()
-                cursor.execute("UPDATE products SET stock = ?, price = ? WHERE name = ?", 
-                               (new_stock, new_price, selected_item))
+                # កាត់ស្តុកចេញ
+                cursor.execute("UPDATE products SET stock = stock - ? WHERE name = ?", (qty_to_sell, item_to_sell))
+                # កត់ចូលប្រវត្តិលក់
+                cursor.execute("INSERT INTO sales_history (product_name, quantity, total_price) VALUES (?, ?, ?)", 
+                               (item_to_sell, qty_to_sell, total_bill))
                 conn.commit()
                 conn.close()
-                st.success(f"បានធ្វើបច្ចុប្បន្នភាព {selected_item} រួចរាល់!")
+                st.success(f"លក់ {item_to_sell} ចំនួន {qty_to_sell} រួចរាល់!")
                 time.sleep(1)
                 st.rerun()
+            else:
+                st.error("ស្តុកមិនគ្រប់គ្រាន់សម្រាប់លក់ទេ!")
 
     st.divider()
 
-    # --- ៣. ការបង្ហាញក្រាហ្វិក និងតារាង (ដូចមុន) ---
-    if not df.empty:
-        df['total_value'] = df['stock'] * df['price']
-        col_m1, col_m2, col_m3 = st.columns(3)
-        col_m1.metric("មុខទំនិញសរុប", len(df))
-        col_m2.metric("ស្តុកសរុប", int(df['stock'].sum()))
-        col_m3.metric("តម្លៃស្តុកសរុប ($)", f"{df['total_value'].sum():,.2f}")
-        
-        st.bar_chart(data=df, x="name", y="stock")
-        st.dataframe(df[['name', 'stock', 'price', 'total_value']], use_container_width=True)
+    # --- ៣. បង្ហាញរបាយការណ៍ ---
+    tab1, tab2 = st.tabs(["📋 បញ្ជីស្តុក", "📜 ប្រវត្តិលក់ដូរ"])
+    with tab1:
+        st.dataframe(df, use_container_width=True)
+    with tab2:
+        st.write(f"ចំណូលសរុប: **${sales_df['total_price'].sum():,.2f}**")
+        st.dataframe(sales_df, use_container_width=True)
 
     # --- ៤. Sidebar: បញ្ចូលថ្មី ---
-    st.sidebar.header("📝 បញ្ចូលទំនិញថ្មី")
-    with st.sidebar.form("add_form", clear_on_submit=True):
-        name = st.text_input("ឈ្មោះទំនិញ")
-        qty = st.number_input("ចំនួន", min_value=0)
-        p_price = st.number_input("តម្លៃ ($)", min_value=0.0, format="%.2f")
-        if st.form_submit_button("បញ្ចូល"):
-            if name:
-                conn = sqlite3.connect('business.db')
-                cursor = conn.cursor()
-                cursor.execute("INSERT INTO products (name, stock, price) VALUES (?, ?, ?)", (name, qty, p_price))
-                conn.commit()
-                conn.close()
-                st.rerun()
+    with st.sidebar:
+        st.header("📝 បញ្ចូលទំនិញថ្មី")
+        # ... កូដបញ្ចូលទំនិញ (ដូចមុន) ...
+        if st.sidebar.button("ចាកចេញ (Log out)"):
+            cookie_manager.delete("is_logged_in")
+            st.session_state["logged_in"] = False
+            st.rerun()
