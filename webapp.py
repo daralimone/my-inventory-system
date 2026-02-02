@@ -22,7 +22,20 @@ def init_db():
 
 init_db()
 
-import st_gsheets_connection # បណ្ណាល័យងាយស្រួលបំផុតសម្រាប់ Streamlit
+from st_gsheets_connection import GSheetsConnection
+
+# បង្កើត Connection ទៅកាន់ Google Sheets
+conn_gsheet = st.connection("gsheets", type=GSheetsConnection)
+
+if st.button("📤 បញ្ជូនរបាយការណ៍ទៅ Google Sheets"):
+    # ទាញទិន្នន័យពី SQLite មកដាក់ក្នុង DataFrame
+    conn_db = sqlite3.connect('business.db')
+    df_to_export = pd.read_sql_query("SELECT * FROM sales_history", conn_db)
+    conn_db.close()
+    
+    # បញ្ជូនទៅ Google Sheets
+    conn_gsheet.update(data=df_to_export)
+    st.success("✅ បានបង្កើតរបាយការណ៍ក្នុង Google Sheets រួចរាល់! អ្នកអាចបើកមើលក្នុង App Google Sheets បាន។")
 
 def send_to_google_sheets(df):
     conn = st.connection("gsheets", type=GSheetsConnection)
