@@ -36,7 +36,7 @@ def login():
             
             if st.button("ចូលប្រើ", use_container_width=True):
                 # កំណត់ Username និង Password នៅទីនេះ
-                if username == "admin" and password == "12345":
+                if username == "daralim.one" and password == "aSd.12345678":
                     st.session_state["logged_in"] = True
                     st.rerun()
                 else:
