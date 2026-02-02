@@ -1,4 +1,40 @@
 import streamlit as st
+import streamlit as st
+
+# ១. បង្កើតមុខងារត្រួតពិនិត្យការចូលប្រើ
+def login():
+    if "logged_in" not in st.session_state:
+        st.session_state["logged_in"] = False
+
+    if not st.session_state["logged_in"]:
+        st.title("🔐 ការចូលប្រើប្រាស់ប្រព័ន្ធ")
+        
+        # បង្កើតប្រអប់បញ្ចូលឈ្មោះ និងលេខកូដ
+        username = st.text_input("ឈ្មោះអ្នកប្រើប្រាស់ (Username)")
+        password = st.text_input("លេខកូដសម្ងាត់ (Password)", type="password")
+        
+        if st.button("ចូលប្រើ"):
+            # អ្នកអាចប្តូរឈ្មោះ និងលេខកូដនៅត្រង់នេះ
+            if username == "admin" and password == "12345":
+                st.session_state["logged_in"] = True
+                st.rerun() # ឱ្យវា Reload ដើម្បីបង្ហាញ App
+            else:
+                st.error("ឈ្មោះ ឬ លេខកូដសម្ងាត់មិនត្រឹមត្រូវ!")
+        return False
+    else:
+        # បង្កើតប៊ូតុង Log out នៅចំហៀង (Sidebar)
+        if st.sidebar.button("ចាកចេញ (Log out)"):
+            st.session_state["logged_in"] = False
+            st.rerun()
+        return True
+
+# ២. ហៅមុខងារ Login មកប្រើ
+if login():
+    # --- ដាក់កូដកម្មវិធីលក់ដូរ និងស្តុករបស់អ្នកទាំងអស់នៅខាងក្រោមនេះ ---
+    st.title("🛍️ ប្រព័ន្ធគ្រប់គ្រងលក់ដូរ")
+    
+    # កូដបង្ហាញរបាយការណ៍ និងការលក់...
+    st.write("ស្វាគមន៍មកកាន់ប្រព័ន្ធគ្រប់គ្រងរបស់អ្នក!")
 import sqlite3
 import pandas as pd
 
