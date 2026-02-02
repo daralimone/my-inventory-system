@@ -1,20 +1,21 @@
 import streamlit as st
-import sqlite3
-import pandas as pd
+import time
 
-# --- ការកំណត់ទំព័រ (ត្រូវតែនៅខាងលើគេបង្អស់) ---
-st.set_page_config(page_title="ប្រព័ន្ធគ្រប់គ្រងស្តង់ដា", layout="wide")
+# កំណត់រយៈពេល (ឧទាហរណ៍៖ ឱ្យវាចងចាំ ៣៦០០ វិនាទី ឬ ១ ម៉ោង)
+# ចំណាំ៖ Streamlit នឹង Reset បើអ្នកបិទ Browser ឬបាត់ Internet យូរ
+def login():
+    if "logged_in" not in st.session_state:
+        st.session_state["logged_in"] = False
 
-# --- ១. មុខងារបង្កើតតារាងចាំបាច់ក្នុង Database ---
-def init_db():
-    conn = sqlite3.connect('business.db')
-    cursor = conn.cursor()
-    cursor.execute('''CREATE TABLE IF NOT EXISTS products 
-                      (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, stock INTEGER, price REAL)''')
-    cursor.execute('''CREATE TABLE IF NOT EXISTS sales_history 
-                      (id INTEGER PRIMARY KEY AUTOINCREMENT, product_name TEXT, quantity INTEGER, total_price REAL, sale_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
-    conn.commit()
-    conn.close()
+    if not st.session_state["logged_in"]:
+        # ... ផ្នែកកូដបញ្ចូល Username/Password ដូចមុន ...
+        # បន្ថែម Checkbox "ចងចាំខ្ញុំ" (សម្រាប់តែជាសញ្ញា ប៉ុន្តែ Session State នឹងជួយរក្សា)
+        remember_me = st.checkbox("ចងចាំខ្ញុំលើឧបករណ៍នេះ")
+        
+        if st.button("ចូលប្រើ"):
+            if username == "daralim.one" and password == "aSd.12345678":
+                st.session_state["logged_in"] = True
+                st.rerun()
 
 init_db()
 
