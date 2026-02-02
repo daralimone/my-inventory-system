@@ -22,11 +22,15 @@ def init_db():
 
 init_db()
 
-def to_excel(df):
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Sheet1')
-    return output.getvalue()
+import st_gsheets_connection # បណ្ណាល័យងាយស្រួលបំផុតសម្រាប់ Streamlit
+
+def send_to_google_sheets(df):
+    conn = st.connection("gsheets", type=GSheetsConnection)
+    conn.update(
+        spreadsheet="https://docs.google.com/spreadsheets/d/តំណរភ្ជាប់_SHEET_របស់អ្នក",
+        data=df
+    )
+    st.success("✅ ទិន្នន័យត្រូវបានបញ្ជូនទៅ Google Sheet រួចរាល់!")
 
 def login():
     try:
