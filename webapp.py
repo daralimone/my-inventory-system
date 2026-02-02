@@ -1,25 +1,26 @@
 import streamlit as st
+import sqlite3
+import pandas as pd
 import time
 
-# កំណត់រយៈពេល (ឧទាហរណ៍៖ ឱ្យវាចងចាំ ៣៦០០ វិនាទី ឬ ១ ម៉ោង)
-# ចំណាំ៖ Streamlit នឹង Reset បើអ្នកបិទ Browser ឬបាត់ Internet យូរ
-def login():
-    if "logged_in" not in st.session_state:
-        st.session_state["logged_in"] = False
+# --- ១. ការកំណត់ទំព័រ (ត្រូវតែនៅខាងលើគេបង្អស់) ---
+st.set_page_config(page_title="ប្រព័ន្ធគ្រប់គ្រងស្តង់ដា", layout="wide")
 
-    if not st.session_state["logged_in"]:
-        # ... ផ្នែកកូដបញ្ចូល Username/Password ដូចមុន ...
-        # បន្ថែម Checkbox "ចងចាំខ្ញុំ" (សម្រាប់តែជាសញ្ញា ប៉ុន្តែ Session State នឹងជួយរក្សា)
-        remember_me = st.checkbox("ចងចាំខ្ញុំលើឧបករណ៍នេះ")
-        
-        if st.button("ចូលប្រើ"):
-            if username == "daralim.one" and password == "aSd.12345678":
-                st.session_state["logged_in"] = True
-                st.rerun()
+# --- ២. បង្កើតនិយមន័យមុខងារជាមុន (Define first) ---
+def init_db():
+    conn = sqlite3.connect('business.db')
+    cursor = conn.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS products 
+                      (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, stock INTEGER, price REAL)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS sales_history 
+                      (id INTEGER PRIMARY KEY AUTOINCREMENT, product_name TEXT, quantity INTEGER, total_price REAL, sale_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    conn.commit()
+    conn.close()
 
-init_db()
+# --- ៣. បន្ទាប់មកទើបហៅវាមកប្រើ (Call second) ---
+init_db() 
 
-# --- ២. មុខងារ Login ---
+# --- ៤. មុខងារ Login ---
 def login():
     if "logged_in" not in st.session_state:
         st.session_state["logged_in"] = False
@@ -39,80 +40,41 @@ def login():
         return False
     return True
 
-# --- ៣. មុខងារទាញទិន្នន័យ ---
-def get_data():
-    conn = sqlite3.connect('business.db')
-    df = pd.read_sql_query("SELECT * FROM products", conn)
-    conn.close()
-    return df
-
-# --- ៤. ដំណើរការកម្មវិធីចម្បង (Main App) ---
+# --- ៥. ដំណើរការកម្មវិធីចម្បង ---
 if login():
-    # ប៊ូតុង Log out ដាក់ក្នុង Sidebar
     if st.sidebar.button("ចាកចេញ (Log out)"):
         st.session_state["logged_in"] = False
         st.rerun()
 
     st.title("📦 ប្រព័ន្ធគ្រប់គ្រងស្តុក និងលក់ដូរ")
     
-    # --- Sidebar: បង្កើត Form សម្រាប់បញ្ចូលគ្រប់យ៉ាង ---
-    # កូដផ្នែកនេះត្រូវតែស្ថិតនៅក្រោម "if login():" និងដកឃ្លាចូលឱ្យត្រឹមត្រូវ
+    # មុខងារទាញទិន្នន័យ
+    def get_data():
+        conn = sqlite3.connect('business.db')
+        df = pd.read_sql_query("SELECT * FROM products", conn)
+        conn.close()
+        return df
+
+    df_products = get_data()
+
+    # Sidebar Form
     st.sidebar.header("📝 គ្រប់គ្រងទិន្នន័យ")
     with st.sidebar.form("my_form", clear_on_submit=True):
         st.write("➕ បញ្ចូលទំនិញថ្មី")
         new_name = st.text_input("ឈ្មោះទំនិញ")
         new_qty = st.number_input("ចំនួនក្នុងស្តុក", min_value=0, step=1)
         new_price = st.number_input("តម្លៃលក់ ($)", min_value=0.0, format="%.2f")
-        
         submitted = st.form_submit_button("បញ្ចូលទៅក្នុងប្រព័ន្ធ")
 
-        if submitted:
-            if new_name:
-                conn = sqlite3.connect('business.db')
-                cursor = conn.cursor()
-                cursor.execute("INSERT INTO products (name, stock, price) VALUES (?, ?, ?)", 
-                               (new_name, new_qty, new_price))
-                conn.commit()
-                conn.close()
-                st.sidebar.success(f"✅ បានបញ្ចូល {new_name} រួចរាល់!")
-                st.rerun()
-            else:
-                st.sidebar.error("⚠️ សូមបញ្ចូលឈ្មោះទំនិញ!")
+        if submitted and new_name:
+            conn = sqlite3.connect('business.db')
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO products (name, stock, price) VALUES (?, ?, ?)", (new_name, new_qty, new_price))
+            conn.commit()
+            conn.close()
+            st.sidebar.success(f"✅ បានបញ្ចូល {new_name} រួចរាល់!")
+            st.rerun()
 
-    # --- តួសេចក្តីកណ្តាល: បង្ហាញតារាង និងលក់ ---
-    df_products = get_data()
-    tab1, tab2 = st.tabs(["📊 ស្តុកបច្ចុប្បន្ន", "📈 ស្ថិតិលក់"])
-
-    with tab1:
-        st.subheader("📋 បញ្ជីទំនិញ")
-        st.dataframe(df_products, use_container_width=True)
-        
-        st.divider()
-        st.subheader("🛒 ការលក់ទំនិញ")
-        if not df_products.empty:
-            selected_item = st.selectbox("ជ្រើសរើសទំនិញសម្រាប់លក់", df_products['name'])
-            qty_to_sell = st.number_input("ចំនួនដែលលក់", min_value=1, step=1)
-            
-            if st.button("បញ្ជាក់ការលក់"):
-                product_info = df_products[df_products['name'] == selected_item].iloc[0]
-                current_stock = product_info['stock']
-                if current_stock >= qty_to_sell:
-                    new_stock = current_stock - qty_to_sell
-                    total_p = qty_to_sell * product_info['price']
-                    
-                    conn = sqlite3.connect('business.db')
-                    cursor = conn.cursor()
-                    cursor.execute("UPDATE products SET stock = ? WHERE name = ?", (int(new_stock), selected_item))
-                    cursor.execute("INSERT INTO sales_history (product_name, quantity, total_price) VALUES (?, ?, ?)", 
-                                   (selected_item, qty_to_sell, total_p))
-                    conn.commit()
-                    conn.close()
-                    st.success(f"លក់ជោគជ័យ! សរុប: {total_p}$")
-                    st.rerun()
-                else:
-                    st.error("ស្តុកមិនគ្រាន់គ្រាន់ទេ!")
-
-    with tab2:
-        if not df_products.empty:
-            st.subheader("ក្រាហ្វិកស្តុក")
-            st.bar_chart(data=df_products, x="name", y="stock") 
+    # តារាងបង្ហាញទំនិញ
+    st.subheader("📋 បញ្ជីទំនិញបច្ចុប្បន្ន")
+    st.dataframe(df_products, use_container_width=True) 
