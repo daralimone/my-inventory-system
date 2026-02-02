@@ -2,11 +2,15 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 import time
+from extra_streamlit_components import CookieManager
 
-# --- ១. ការកំណត់ទំព័រ (ត្រូវតែនៅខាងលើគេបង្អស់) ---
+# --- ១. ការកំណត់ទំព័រ (ត្រូវនៅខាងលើគេបង្អស់) ---
 st.set_page_config(page_title="ប្រព័ន្ធគ្រប់គ្រងស្តង់ដា", layout="wide")
 
-# --- ២. បង្កើតនិយមន័យមុខងារជាមុន (Define first) ---
+# បង្កើត Cookie Manager សម្រាប់ចងចាំការចូលប្រើ
+cookie_manager = CookieManager()
+
+# --- ២. បង្កើតនិយមន័យមុខងារ Database ---
 def init_db():
     conn = sqlite3.connect('business.db')
     cursor = conn.cursor()
@@ -17,33 +21,38 @@ def init_db():
     conn.commit()
     conn.close()
 
-# --- ៣. បន្ទាប់មកទើបហៅវាមកប្រើ (Call second) ---
-init_db() 
+init_db()
 
-# --- ៤. មុខងារ Login ---
+# --- ៣. មុខងារ Login ដោយប្រើ Cookie ---
 def login():
-    if "logged_in" not in st.session_state:
-        st.session_state["logged_in"] = False
+    # ទាញយក Cookie "is_logged_in" ពី Browser
+    is_logged_in = cookie_manager.get(cookie="is_logged_in")
 
-    if not st.session_state["logged_in"]:
+    # បើគ្មាន Cookie ទេ បង្ហាញផ្ទាំង Login
+    if is_logged_in != "true":
         st.markdown("<h2 style='text-align: center;'>🔐 ការចូលប្រើប្រាស់ប្រព័ន្ធ</h2>", unsafe_allow_html=True)
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             username = st.text_input("ឈ្មោះអ្នកប្រើប្រាស់ (Username)")
             password = st.text_input("លេខកូដសម្ងាត់ (Password)", type="password")
+            
             if st.button("ចូលប្រើ", use_container_width=True):
                 if username == "daralim.one" and password == "aSd.12345678":
-                    st.session_state["logged_in"] = True
+                    # រក្សាទុក Cookie រយៈពេល ១ ថ្ងៃ (៨៦៤០០ វិនាទី)
+                    cookie_manager.set("is_logged_in", "true", max_age=86400)
+                    st.success("ចូលប្រើជោគជ័យ!")
+                    time.sleep(1)
                     st.rerun()
                 else:
                     st.error("ឈ្មោះ ឬ លេខកូដមិនត្រឹមត្រូវ!")
         return False
     return True
 
-# --- ៥. ដំណើរការកម្មវិធីចម្បង ---
+# --- ៤. ដំណើរការកម្មវិធីចម្បង ---
 if login():
+    # ប៊ូតុង Log out (លុប Cookie ចោល)
     if st.sidebar.button("ចាកចេញ (Log out)"):
-        st.session_state["logged_in"] = False
+        cookie_manager.delete("is_logged_in")
         st.rerun()
 
     st.title("📦 ប្រព័ន្ធគ្រប់គ្រងស្តុក និងលក់ដូរ")
@@ -57,7 +66,7 @@ if login():
 
     df_products = get_data()
 
-    # Sidebar Form
+    # Sidebar Form សម្រាប់បញ្ចូលទំនិញ
     st.sidebar.header("📝 គ្រប់គ្រងទិន្នន័យ")
     with st.sidebar.form("my_form", clear_on_submit=True):
         st.write("➕ បញ្ចូលទំនិញថ្មី")
@@ -73,6 +82,7 @@ if login():
             conn.commit()
             conn.close()
             st.sidebar.success(f"✅ បានបញ្ចូល {new_name} រួចរាល់!")
+            time.sleep(1)
             st.rerun()
 
     # តារាងបង្ហាញទំនិញ
