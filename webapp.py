@@ -55,54 +55,54 @@ if login():
         st.session_state["logged_in"] = False
         st.rerun()
 
-    st.title("📦 គ្រប់គ្រងស្តុក និងវិភាគទិន្នន័យ")
+    st.title("📦 ប្រព័ន្ធគ្រប់គ្រងស្តុកវៃឆ្លាត")
 
     # --- ១. ទាញទិន្នន័យ ---
     conn = sqlite3.connect('business.db')
     df = pd.read_sql_query("SELECT * FROM products", conn)
     conn.close()
 
+    # --- ២. ផ្នែកកែប្រែទិន្នន័យ (Update Section) ---
+    with st.expander("🔄 កែប្រែចំនួនស្តុក ឬ តម្លៃទំនិញ"):
+        if not df.empty:
+            selected_item = st.selectbox("ជ្រើសរើសទំនិញដើម្បីកែប្រែ", df['name'])
+            item_info = df[df['name'] == selected_item].iloc[0]
+            
+            col_u1, col_u2 = st.columns(2)
+            new_stock = col_u1.number_input("ចំនួនស្តុកថ្មី", value=int(item_info['stock']))
+            new_price = col_u2.number_input("តម្លៃថ្មី ($)", value=float(item_info['price']), format="%.2f")
+            
+            if st.button("រក្សាទុកការកែប្រែ", type="secondary"):
+                conn = sqlite3.connect('business.db')
+                cursor = conn.cursor()
+                cursor.execute("UPDATE products SET stock = ?, price = ? WHERE name = ?", 
+                               (new_stock, new_price, selected_item))
+                conn.commit()
+                conn.close()
+                st.success(f"បានធ្វើបច្ចុប្បន្នភាព {selected_item} រួចរាល់!")
+                time.sleep(1)
+                st.rerun()
+
+    st.divider()
+
+    # --- ៣. ការបង្ហាញក្រាហ្វិក និងតារាង (ដូចមុន) ---
     if not df.empty:
-        # គណនាតម្លៃសរុបក្នុងស្តុក (ចំនួន x តម្លៃ)
         df['total_value'] = df['stock'] * df['price']
-        total_inv_value = df['total_value'].sum()
-
-        # --- ២. បង្ហាញព័ត៌មានសង្ខេប (Metrics) ---
         col_m1, col_m2, col_m3 = st.columns(3)
-        col_m1.metric("ចំនួនមុខទំនិញសរុប", len(df))
-        col_m2.metric("ចំនួនស្តុកសរុប", int(df['stock'].sum()))
-        col_m3.metric("តម្លៃស្តុកសរុប ($)", f"{total_inv_value:,.2f}")
-
-        st.divider()
-
-        # --- ៣. ក្រាហ្វិកវិភាគ (Charts) ---
-        col_chart1, col_chart2 = st.columns(2)
+        col_m1.metric("មុខទំនិញសរុប", len(df))
+        col_m2.metric("ស្តុកសរុប", int(df['stock'].sum()))
+        col_m3.metric("តម្លៃស្តុកសរុប ($)", f"{df['total_value'].sum():,.2f}")
         
-        with col_chart1:
-            st.subheader("📊 ចំនួនស្តុកតាមមុខទំនិញ")
-            st.bar_chart(data=df, x="name", y="stock")
+        st.bar_chart(data=df, x="name", y="stock")
+        st.dataframe(df[['name', 'stock', 'price', 'total_value']], use_container_width=True)
 
-        with col_chart2:
-            st.subheader("💰 តម្លៃស្តុកតាមមុខទំនិញ ($)")
-            st.line_chart(data=df, x="name", y="total_value")
-
-    # --- ៤. ផ្នែកស្វែងរក និងតារាង ---
-    search_query = st.text_input("🔍 ស្វែងរកទំនិញ...", "")
-    if search_query:
-        display_df = df[df['name'].str.contains(search_query, case=False)]
-    else:
-        display_df = df
-    
-    st.subheader("📋 បញ្ជីទំនិញបច្ចុប្បន្ន")
-    st.dataframe(display_df, use_container_width=True)
-
-    # --- ៥. Sidebar: បញ្ចូលទំនិញថ្មី ---
-    st.sidebar.header("📝 បញ្ចូលទិន្នន័យ")
+    # --- ៤. Sidebar: បញ្ចូលថ្មី ---
+    st.sidebar.header("📝 បញ្ចូលទំនិញថ្មី")
     with st.sidebar.form("add_form", clear_on_submit=True):
         name = st.text_input("ឈ្មោះទំនិញ")
         qty = st.number_input("ចំនួន", min_value=0)
         p_price = st.number_input("តម្លៃ ($)", min_value=0.0, format="%.2f")
-        if st.form_submit_button("បញ្ចូលទៅក្នុងស្តុក"):
+        if st.form_submit_button("បញ្ចូល"):
             if name:
                 conn = sqlite3.connect('business.db')
                 cursor = conn.cursor()
