@@ -88,17 +88,21 @@ if login():
             cur = df[df['name'] == item].iloc[0]
             if st.button(f"លក់ {item} (សរុប: ${qty*cur['price']:,.2f})"):
                 if cur['stock'] >= qty:
-                    conn = sqlite3.connect('business.db')
-                    cursor = conn.cursor()
-                    cursor.execute("UPDATE products SET stock = stock - ? WHERE name = ?", (qty, item))
-                    cursor.execute("INSERT INTO sales_history (product_name, quantity, cost_price, sale_price, total_price) VALUES (?, ?, ?, ?, ?)", 
-                                   (item, qty, cur['cost'], cur['price'], qty*cur['price']))
-                    conn.commit()
-                    conn.close()
-                    st.success("លក់រួចរាល់!")
+                    # ប្រើ Context Manager ដើម្បីសុវត្ថិភាព និងល្បឿន
+                    with sqlite3.connect('business.db') as conn:
+                        cursor = conn.cursor()
+                        # ១. កាត់ស្តុក
+                        cursor.execute("UPDATE products SET stock = stock - ? WHERE name = ?", (qty, item))
+                        # ២. កត់ត្រាប្រវត្តិលក់
+                        cursor.execute("INSERT INTO sales_history (product_name, quantity, cost_price, sale_price, total_price) VALUES (?, ?, ?, ?, ?)", 
+                                       (item, qty, cur['cost'], cur['price'], qty*cur['price']))
+                        conn.commit()
+                    
+                    st.success(f"បានលក់ {item} រួចរាល់!")
                     time.sleep(1)
                     st.rerun()
-                else: st.error("ស្តុកមិនគ្រប់គ្រាន់!")
+                else:
+                    st.error("ស្តុកមិនគ្រប់គ្រាន់!")
 
     with tab_inv:
         search = st.text_input("🔍 ស្វែងរកក្នុងស្តុក...")
