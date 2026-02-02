@@ -4,7 +4,7 @@ import pandas as pd
 import time
 import io
 from extra_streamlit_components import CookieManager
-from st_gsheets_connection import GSheetsConnection
+from st_gsheets_connection import GSheetsConnection # type: ignore
 
 # --- ១. ការកំណត់ទំព័រ ---
 st.set_page_config(page_title="ប្រព័ន្ធគ្រប់គ្រងអាជីវកម្ម", layout="wide")
@@ -159,4 +159,4 @@ if login():
 
             st.subheader("📈 ក្រាហ្វិកចំណូល")
             daily_rev = sales_df.groupby(pd.to_datetime(sales_df['sale_time']).dt.date)['total_price'].sum()
-            st.line_chart(daily_rev) 
+            st.line_chart(daily_rev)
