@@ -135,7 +135,28 @@ if login():
                 st.rerun()
 
     # --- Tab 3: របាយការណ៍ ---
-    with tab_rep:
+   with tab_rep:
+        if not sales_df.empty:
+            # ១. គណនាទិន្នន័យ
+            sales_df['profit'] = (sales_df['sale_price'] - sales_df['cost_price']) * sales_df['quantity']
+            total_rev = sales_df['total_price'].sum()
+            total_prof = sales_df['profit'].sum()
+            
+            # គណនាដើមទុនក្នុងស្តុកបច្ចុប្បន្ន
+            current_inv_value = (df['stock'] * df['cost']).sum()
+
+            # ២. បង្ហាញជាប្រអប់ Metric (Dashboard)
+            col_d1, col_d2, col_d3 = st.columns(3)
+            col_d1.metric("ដើមទុនក្នុងស្តុក", f"${current_inv_value:,.2f}")
+            col_d2.metric("ចំណូលសរុប", f"${total_rev:,.2f}")
+            col_d3.metric("ចំណេញសុទ្ធ", f"${total_prof:,.2f}", delta=f"{(total_prof/total_rev)*100:.1f}%")
+
+            st.divider()
+            
+            # ៣. ក្រាហ្វិកចំណូលប្រចាំថ្ងៃ
+            st.subheader("📈 ក្រាហ្វិកចំណូល")
+            daily_rev = sales_df.groupby(pd.to_datetime(sales_df['sale_time']).dt.date)['total_price'].sum()
+            st.line_chart(daily_rev)
         if not sales_df.empty:
             sales_df['profit'] = (sales_df['sale_price'] - sales_df['cost_price']) * sales_df['quantity']
             st.metric("ចំណេញសរុប", f"${sales_df['profit'].sum():,.2f}")
