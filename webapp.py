@@ -130,4 +130,4 @@ if login():
             st.subheader("📈 ក្រាហ្វិកចំណូល")
             daily_rev = sales_df.groupby(pd.to_datetime(sales_df['sale_time']).dt.date)['total_price'].sum()
             st.line_chart(daily_rev)
-            st.download_button("📥 ទាញយករបាយការណ៍ (Excel)", data=to_excel(sales_df), file_name='report.xlsx')
+            st.download_button("📥 ទាញយករបាយការណ៍ (Excel)", data=to_excel(sales_df), file_name='report.xlsx') 
