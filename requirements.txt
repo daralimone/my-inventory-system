@@ -1,4 +1,5 @@
 streamlit
 pandas
 extra-streamlit-components
+xlsxwriter
 st-gsheets-connection
