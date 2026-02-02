@@ -2,6 +2,36 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 
+import streamlit as st
+
+# ១. បង្កើតមុខងារត្រួតពិនិត្យ Password
+def check_password():
+    """Returns True if the user had the correct password."""
+    def password_entered():
+        """Checks whether a password entered by the user is correct."""
+        if st.session_state["password"] == "1234": # អ្នកអាចដូរ "1234" ជាលេខដែលអ្នកចង់បាន
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # លុប password ចេញពី state ដើម្បីសុវត្ថិភាព
+        else:
+            st.session_state["password_correct"] = False
+
+    if "password_correct" not in st.session_state:
+        # បង្ហាញផ្ទាំងឱ្យវាយ Password លើកដំបូង
+        st.text_input("សូមបញ្ចូលលេខកូដសម្ងាត់", type="password", on_change=password_entered, key="password")
+        return False
+    elif not st.session_state["password_correct"]:
+        # បើវាយខុស បង្ហាញសារព្រមាន
+        st.text_input("លេខកូដមិនត្រឹមត្រូវ សូមព្យាយាមម្ដងទៀត", type="password", on_change=password_entered, key="password")
+        st.error("😕 លេខកូដខុស!")
+        return False
+    else:
+        return True
+
+# ២. ប្រើប្រាស់មុខងារ Login
+if check_password():
+    # --- ដាក់កូដកម្មវិធីរបស់អ្នកទាំងអស់នៅទីនេះ ---
+    st.title("🛍️ ប្រព័ន្ធគ្រប់គ្រងស្តុករបស់ខ្ញុំ")
+    # ... កូដចាស់របស់អ្នក (កន្លែងលក់ កន្លែងបង្ហាញប្រតិបត្តិការ) ...
 # ១. បង្កើតមុខងារតភ្ជាប់ Database
 def get_data():
     conn = sqlite3.connect('business.db')
