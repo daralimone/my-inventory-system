@@ -1,104 +1,124 @@
 import streamlit as st
-import streamlit as st
+import sqlite3
+import pandas as pd
 
-# ១. បង្កើតមុខងារត្រួតពិនិត្យការចូលប្រើ
+# --- ការកំណត់ទំព័រ (ត្រូវតែនៅខាងលើគេបង្អស់) ---
+st.set_page_config(page_title="ប្រព័ន្ធគ្រប់គ្រងស្តង់ដា", layout="wide")
+
+# --- ១. មុខងារបង្កើតតារាងចាំបាច់ក្នុង Database ---
+def init_db():
+    conn = sqlite3.connect('business.db')
+    cursor = conn.cursor()
+    # តារាងផលិតផល
+    cursor.execute('''CREATE TABLE IF NOT EXISTS products 
+                      (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, stock INTEGER, price REAL)''')
+    # តារាងប្រវត្តិលក់
+    cursor.execute('''CREATE TABLE IF NOT EXISTS sales_history 
+                      (id INTEGER PRIMARY KEY AUTOINCREMENT, product_name TEXT, quantity INTEGER, total_price REAL, sale_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    conn.commit()
+    conn.close()
+
+init_db()
+
+# --- ២. មុខងារ Login (Username & Password) ---
 def login():
     if "logged_in" not in st.session_state:
         st.session_state["logged_in"] = False
 
     if not st.session_state["logged_in"]:
-        st.title("🔐 ការចូលប្រើប្រាស់ប្រព័ន្ធ")
+        st.markdown("<h2 style='text-align: center;'>🔐 ការចូលប្រើប្រាស់ប្រព័ន្ធ</h2>", unsafe_allow_html=True)
         
-        # បង្កើតប្រអប់បញ្ចូលឈ្មោះ និងលេខកូដ
-        username = st.text_input("ឈ្មោះអ្នកប្រើប្រាស់ (Username)")
-        password = st.text_input("លេខកូដសម្ងាត់ (Password)", type="password")
-        
-        if st.button("ចូលប្រើ"):
-            # អ្នកអាចប្តូរឈ្មោះ និងលេខកូដនៅត្រង់នេះ
-            if username == "admin" and password == "12345":
-                st.session_state["logged_in"] = True
-                st.rerun() # ឱ្យវា Reload ដើម្បីបង្ហាញ App
-            else:
-                st.error("ឈ្មោះ ឬ លេខកូដសម្ងាត់មិនត្រឹមត្រូវ!")
+        # រចនាប្រអប់ Login ឱ្យនៅកណ្តាល
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            username = st.text_input("ឈ្មោះអ្នកប្រើប្រាស់ (Username)")
+            password = st.text_input("លេខកូដសម្ងាត់ (Password)", type="password")
+            
+            if st.button("ចូលប្រើ", use_container_width=True):
+                # កំណត់ Username និង Password នៅទីនេះ
+                if username == "admin" and password == "12345":
+                    st.session_state["logged_in"] = True
+                    st.rerun()
+                else:
+                    st.error("ឈ្មោះ ឬ លេខកូដមិនត្រឹមត្រូវ!")
         return False
     else:
-        # បង្កើតប៊ូតុង Log out នៅចំហៀង (Sidebar)
+        # បង្កើតប៊ូតុង Log out ក្នុង Sidebar
         if st.sidebar.button("ចាកចេញ (Log out)"):
             st.session_state["logged_in"] = False
             st.rerun()
         return True
 
-# ២. ហៅមុខងារ Login មកប្រើ
-if login():
-    # --- ដាក់កូដកម្មវិធីលក់ដូរ និងស្តុករបស់អ្នកទាំងអស់នៅខាងក្រោមនេះ ---
-    st.title("🛍️ ប្រព័ន្ធគ្រប់គ្រងលក់ដូរ")
-    
-    # កូដបង្ហាញរបាយការណ៍ និងការលក់...
-    st.write("ស្វាគមន៍មកកាន់ប្រព័ន្ធគ្រប់គ្រងរបស់អ្នក!")
-import sqlite3
-import pandas as pd
-
-import streamlit as st
-
-# ១. បង្កើតមុខងារត្រួតពិនិត្យ Password
-def check_password():
-    """Returns True if the user had the correct password."""
-    def password_entered():
-        """Checks whether a password entered by the user is correct."""
-        if st.session_state["password"] == "1234": # អ្នកអាចដូរ "1234" ជាលេខដែលអ្នកចង់បាន
-            st.session_state["password_correct"] = True
-            del st.session_state["password"]  # លុប password ចេញពី state ដើម្បីសុវត្ថិភាព
-        else:
-            st.session_state["password_correct"] = False
-
-    if "password_correct" not in st.session_state:
-        # បង្ហាញផ្ទាំងឱ្យវាយ Password លើកដំបូង
-        st.text_input("សូមបញ្ចូលលេខកូដសម្ងាត់", type="password", on_change=password_entered, key="password")
-        return False
-    elif not st.session_state["password_correct"]:
-        # បើវាយខុស បង្ហាញសារព្រមាន
-        st.text_input("លេខកូដមិនត្រឹមត្រូវ សូមព្យាយាមម្ដងទៀត", type="password", on_change=password_entered, key="password")
-        st.error("😕 លេខកូដខុស!")
-        return False
-    else:
-        return True
-
-# ២. ប្រើប្រាស់មុខងារ Login
-if check_password():
-    # --- ដាក់កូដកម្មវិធីរបស់អ្នកទាំងអស់នៅទីនេះ ---
-    st.title("🛍️ ប្រព័ន្ធគ្រប់គ្រងស្តុករបស់ខ្ញុំ")
-    # ... កូដចាស់របស់អ្នក (កន្លែងលក់ កន្លែងបង្ហាញប្រតិបត្តិការ) ...
-# ១. បង្កើតមុខងារតភ្ជាប់ Database
+# --- ៣. មុខងារទាញទិន្នន័យពី Database ---
 def get_data():
     conn = sqlite3.connect('business.db')
     df = pd.read_sql_query("SELECT * FROM products", conn)
     conn.close()
     return df
 
-# ២. រៀបចំផ្ទៃកម្មវិធី (UI)
-st.set_page_config(page_title="ប្រព័ន្ធគ្រប់គ្រងស្តង់ដា", layout="wide")
-st.title("📦 ប្រព័ន្ធគ្រប់គ្រងស្តុកទំនិញ")
+# --- ៤. ដំណើរការកម្មវិធីចម្បង (Main App) ---
+if login():
+    st.title("📦 ប្រព័ន្ធគ្រប់គ្រងស្តុក និងលក់ដូរ")
+    
+    # --- Sidebar: បញ្ចូលទំនិញថ្មី ---
+    st.sidebar.header("➕ បញ្ចូលទំនិញថ្មី")
+    new_name = st.sidebar.text_input("ឈ្មោះទំនិញ")
+    new_qty = st.sidebar.number_input("ចំនួនក្នុងស្តុក", min_value=0)
+    new_price = st.sidebar.number_input("តម្លៃលក់ ($)", min_value=0.0)
 
-# ផ្នែកបញ្ចូលទំនិញថ្មី
-st.sidebar.header("➕ បញ្ចូលទំនិញថ្មី")
-name = st.sidebar.text_input("ឈ្មោះទំនិញ")
-qty = st.sidebar.number_input("ចំនួនក្នុងស្តុក", min_value=0)
-price = st.sidebar.number_input("តម្លៃលក់ ($)", min_value=0.0)
+    if st.sidebar.button("រក្សាទុក"):
+        if new_name:
+            conn = sqlite3.connect('business.db')
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO products (name, stock, price) VALUES (?, ?, ?)", (new_name, new_qty, new_price))
+            conn.commit()
+            conn.close()
+            st.sidebar.success(f"បានបញ្ចូល {new_name} ជោគជ័យ!")
+            st.rerun()
+        else:
+            st.sidebar.error("សូមបញ្ចូលឈ្មោះទំនិញ!")
 
-if st.sidebar.button("រក្សាទុក"):
-    conn = sqlite3.connect('business.db')
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO products (name, stock, price) VALUES (?, ?, ?)", (name, qty, price))
-    conn.commit()
-    conn.close()
-    st.sidebar.success("បានបញ្ចូលជោគជ័យ!")
+    # --- តួសេចក្តីកណ្តាល: បង្ហាញតារាង និងលក់ ---
+    df_products = get_data()
 
-# ផ្នែកបង្ហាញទិន្នន័យ (ដូចក្នុង Browser)
-st.subheader("📊 បញ្ជីទំនិញដែលមានស្រាប់")
-df_products = get_data()
-st.dataframe(df_products, use_container_width=True) # បង្ហាញជាតារាងស្អាត
+    tab1, tab2 = st.tabs(["📊 ស្តុកបច្ចុប្បន្ន", "📈 ស្ថិតិលក់"])
 
-# ផ្នែកក្រាហ្វិកសាមញ្ញ
-if not df_products.empty:
-    st.subheader("📈 ស្ថិតិស្តុក")
-    st.bar_chart(data=df_products, x="name", y="stock")
+    with tab1:
+        st.subheader("📋 បញ្ជីទំនិញ")
+        st.dataframe(df_products, use_container_width=True)
+        
+        # ផ្នែកលក់ទំនិញ
+        st.divider()
+        st.subheader("🛒 ការលក់ទំនិញ")
+        if not df_products.empty:
+            selected_item = st.selectbox("ជ្រើសរើសទំនិញសម្រាប់លក់", df_products['name'])
+            qty_to_sell = st.number_input("ចំនួនដែលលក់", min_value=1, step=1)
+            
+            if st.button("បញ្ជាក់ការលក់"):
+                # ទាញយកទិន្នន័យទំនិញដែលរើស
+                product_info = df_products[df_products['name'] == selected_item].iloc[0]
+                current_stock = product_info['stock']
+                price_each = product_info['price']
+                
+                if current_stock >= qty_to_sell:
+                    new_stock = current_stock - qty_to_sell
+                    total_p = qty_to_sell * price_each
+                    
+                    conn = sqlite3.connect('business.db')
+                    cursor = conn.cursor()
+                    # ១. Update ស្តុក
+                    cursor.execute("UPDATE products SET stock = ? WHERE name = ?", (int(new_stock), selected_item))
+                    # ២. កត់ចូលប្រវត្តិលក់
+                    cursor.execute("INSERT INTO sales_history (product_name, quantity, total_price) VALUES (?, ?, ?)", 
+                                   (selected_item, qty_to_sell, total_p))
+                    conn.commit()
+                    conn.close()
+                    st.success(f"លក់ជោគជ័យ! ប្រាក់សរុប: {total_p}$")
+                    st.rerun()
+                else:
+                    st.error("ស្តុកមិនគ្រាន់គ្រាន់ទេ!")
+
+    with tab2:
+        if not df_products.empty:
+            st.subheader("ក្រាហ្វិកស្តុក")
+            st.bar_chart(data=df_products, x="name", y="stock")
