@@ -3,4 +3,3 @@ pandas
 extra-streamlit-components
 st-gsheets-connection
 xlsxwriter
-st-gsheets-connectionxlsxwriter
