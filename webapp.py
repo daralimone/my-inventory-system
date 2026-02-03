@@ -170,27 +170,27 @@ def login():
                         conn.execute(text("DELETE FROM products WHERE name = :n"), {"n": item_to_del})
                     st.rerun()
 
-    with tab_exp:
-        st.subheader("💸 ចំណាយ")
-        with st.form("exp_form", clear_on_submit=True):
-            d = st.text_input("ពិពណ៌នា")
-            a = st.number_input("ទឹកប្រាក់ ($)", min_value=0.0)
-            if st.form_submit_button("រក្សាទុក"):
-                if d and a > 0:
-                    pd.DataFrame([{"description": d, "amount": a}]).to_sql('expenses', engine, if_exists='append', index=False)
-                    st.rerun()
-        st.dataframe(df_expenses, use_container_width=True)
+        with tab_exp:
+            st.subheader("💸 ចំណាយ")
+            with st.form("exp_form", clear_on_submit=True):
+                d = st.text_input("ពិពណ៌នា")
+                a = st.number_input("ទឹកប្រាក់ ($)", min_value=0.0)
+                if st.form_submit_button("រក្សាទុក"):
+                    if d and a > 0:
+                        pd.DataFrame([{"description": d, "amount": a}]).to_sql('expenses', engine, if_exists='append', index=False)
+                        st.rerun()
+            st.dataframe(df_expenses, use_container_width=True)
 
-    with tab_rep:
-        st.subheader("📊 របាយការណ៍")
-        rev = df_sales['total_price'].sum() if not df_sales.empty else 0
-        exp = df_expenses['amount'].sum() if not df_expenses.empty else 0
-        cogs = (df_sales['cost_price'] * df_sales['quantity']).sum() if not df_sales.empty else 0
-        st.metric("ចំណេញសុទ្ធ", f"${(rev - cogs - exp):,.2f}")
-        
-        # ប៊ូតុង Excel
-        buffer = io.BytesIO()
-        with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-            df_sales.to_excel(writer, sheet_name='Sales', index=False)
-            df_products.to_excel(writer, sheet_name='Stock', index=False)
-        st.download_button(label="📊 ទាញយក Excel", data=buffer.getvalue(), file_name="report.xlsx") 
+        with tab_rep:
+            st.subheader("📊 របាយការណ៍")
+            rev = df_sales['total_price'].sum() if not df_sales.empty else 0
+            exp = df_expenses['amount'].sum() if not df_expenses.empty else 0
+            cogs = (df_sales['cost_price'] * df_sales['quantity']).sum() if not df_sales.empty else 0
+            st.metric("ចំណេញសុទ្ធ", f"${(rev - cogs - exp):,.2f}")
+            
+            # ប៊ូតុង Excel
+            buffer = io.BytesIO()
+            with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+                df_sales.to_excel(writer, sheet_name='Sales', index=False)
+                df_products.to_excel(writer, sheet_name='Stock', index=False)
+            st.download_button(label="📊 ទាញយក Excel", data=buffer.getvalue(), file_name="report.xlsx") 
