@@ -58,7 +58,7 @@ def login():
 if login():
     with st.sidebar:
         # បង្ហាញ Logo និងឈ្មោះហាង One
-        st.image("https://www.facebook.com/photo/?fbid=122173235942433880&set=a.122094568268433880", width=100)
+        st.image("https://scontent-ams2-1.xx.fbcdn.net/v/t39.30808-6/565815165_122173235948433880_8509308318680304928_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=2k85Z_3_b2AQ7kNvwFXSwvp&_nc_oc=AdnlLTfWXiVJ67ZJ4xSYy4swYKtOTfZEUYNzHlsMnmjb0qdXk4c7FX5ogZ4oOqDGAxDGGK_tgtY8jrxfYLqldx5E&_nc_zt=23&_nc_ht=scontent-ams2-1.xx&_nc_gid=41aO3Vlu4mNXq03mVUw-NQ&oh=00_AfuY2q1oXzzsXuzEzeDtxnq3ZJybRhcQM9fom5h-KtpvUg&oe=698700C0", width=100)
         st.title("មួយ")
         
         st.header("📝 គ្រប់គ្រងទិន្នន័យ")
