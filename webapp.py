@@ -159,8 +159,22 @@ if login():
                     st.error("ស្តុកមិនគ្រប់គ្រាន់!")
 
     with tab_inv:
-        st.subheader("📦 បញ្ជីស្តុក")
+        st.subheader("📦 បញ្ជីស្តុកបច្ចុប្បន្ន")
+        # បង្ហាញតារាងស្តុក (កូដដែលមានស្រាប់)
         st.dataframe(df.style.apply(lambda row: ['background-color: #ffcccc' if row.stock < 5 else '' for _ in row], axis=1), use_container_width=True)
+        
+        st.divider()
+        st.subheader("🗑️ លុបទំនិញចេញពីបញ្ជី")
+        if not df.empty:
+            # បង្កើតបញ្ជីឈ្មោះទំនិញសម្រាប់រើសលុប
+            item_to_delete = st.selectbox("ជ្រើសរើសទំនិញដែលចង់លុប", df['name'])
+            if st.button(f"លុប {item_to_delete} ចេញជាស្ថាពរ", type="primary"):
+                with sqlite3.connect('business.db') as conn:
+                    conn.execute("DELETE FROM products WHERE name = ?", (item_to_delete,))
+                    conn.commit()
+                st.warning(f"បានលុប {item_to_delete} រួចរាល់!")
+                time.sleep(1)
+                st.rerun()
 
     with tab_exp:
         st.subheader("💸 កត់ត្រាចំណាយ")
