@@ -79,27 +79,18 @@ def login():
 if login():
     with st.sidebar:
         # ប្រើ CSS ដើម្បីបង្ខំឱ្យរូបភាព និងអក្សរទាំងអស់ក្នុង Sidebar នៅចំកណ្ដាល
-        st.markdown(
-            """
+        # បន្ថែម CSS នេះក្នុងផ្នែក st.markdown ខាងលើ
+        st.markdown("""
             <style>
-                [data-testid="stSidebarNav"] {
-                    display: none;
-                }
-                .centered-container {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    text-align: center;
-                }
-                .centered-container img {
-                    border-radius: 10px; /* ធ្វើឱ្យជ្រុងរូបភាពមូលបន្តិចឱ្យស្អាត */
-                    margin-bottom: 10px;
-                }
+            .stButton>button {
+                width: 100%;
+                border-radius: 5px;
+                height: 3em;
+                background-color: #007bff;
+                color: white;
+            }
             </style>
-            """,
-            unsafe_allow_html=True
-        )
+            """, unsafe_allow_html=True)
 
         # ចាប់ផ្ដើមដាក់ Logo និង ឈ្មោះក្នុង Container ដែលយើងបានកំណត់ CSS មិញ
         with st.container():
