@@ -30,21 +30,39 @@ def send_telegram_msg(message):
         pass
 
 def generate_receipt(item_name, qty, price, total):
+    from fpdf import FPDF
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Helvetica", 'B', 16)
-    pdf.cell(200, 10, txt="ONE (1) STORE - RECEIPT", ln=True, align='C')
+    
+    # ឈ្មោះហាង
+    pdf.set_font("Helvetica", 'B', 20)
+    pdf.cell(190, 15, txt="ONE (1) STORE", ln=True, align='C')
+    
+    # បន្ទាត់បំបែក
+    pdf.line(10, 30, 200, 30)
     pdf.ln(10)
+    
+    # ព័ត៌មានលម្អិត
     pdf.set_font("Helvetica", size=12)
-    pdf.cell(200, 10, txt=f"Date: {time.strftime('%Y-%m-%d %H:%M:%S')}", ln=True)
-    pdf.cell(200, 10, txt=f"Item: {item_name}", ln=True)
-    pdf.cell(200, 10, txt=f"Quantity: {qty}", ln=True)
-    pdf.cell(200, 10, txt=f"Unit Price: ${price:.2f}", ln=True)
-    pdf.set_font("Helvetica", 'B', 14)
-    pdf.cell(200, 10, txt=f"Total Amount: ${total:.2f}", ln=True)
+    pdf.cell(100, 10, txt=f"Date: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    pdf.cell(90, 10, txt=f"Receipt No: {int(time.time())}", ln=True, align='R')
+    
+    pdf.ln(5)
+    pdf.set_font("Helvetica", 'B', 12)
+    pdf.cell(100, 10, "Description", border=1)
+    pdf.cell(30, 10, "Qty", border=1, align='C')
+    pdf.cell(60, 10, "Total", border=1, align='C', ln=True)
+    
+    pdf.set_font("Helvetica", size=12)
+    pdf.cell(100, 10, f"{item_name}", border=1)
+    pdf.cell(30, 10, f"{qty}", border=1, align='C')
+    pdf.cell(60, 10, f"${total:.2f}", border=1, align='C', ln=True)
+    
+    # សរុបទឹកប្រាក់ធំៗ
     pdf.ln(10)
-    pdf.set_font("Helvetica", size=10)
-    pdf.cell(200, 10, txt="Thank you for shopping with us!", ln=True, align='C')
+    pdf.set_font("Helvetica", 'B', 16)
+    pdf.cell(190, 10, txt=f"GRAND TOTAL: ${total:.2f}", ln=True, align='R')
+    
     return pdf.output(dest='S').encode('latin-1', 'ignore')
 
 # --- ៤. ប្រព័ន្ធសុវត្ថិភាព (LOGIN) ---
@@ -160,3 +178,13 @@ if login():
             df_sales.to_excel(writer, sheet_name='Sales', index=False)
             df_products.to_excel(writer, sheet_name='Stock', index=False)
         st.download_button(label="📊 ទាញយក Excel", data=buffer.getvalue(), file_name="report.xlsx")
+    @st.cache_data(ttl=60) # ឱ្យវាចាំទិន្នន័យទុកក្នុង App រយៈពេល ៦០ វិនាទី
+def get_data():
+    with engine.connect() as conn:
+        df_p = pd.read_sql_table("products", conn)
+        df_s = pd.read_sql_table("sales_history", conn)
+        df_e = pd.read_sql_table("expenses", conn)
+    return df_p, df_s, df_e
+
+# ពេលហៅប្រើ
+df_products, df_sales, df_expenses = get_data()
