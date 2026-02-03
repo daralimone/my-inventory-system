@@ -57,9 +57,12 @@ def login():
 # ចាប់ផ្ដើមដំណើរការកម្មវិធីចម្បង
 if login():
     with st.sidebar:
-        # បង្ហាញ Logo និងឈ្មោះហាង One
-        st.image("", width=100)
-        st.title("មួយ")
+        try:
+    # ប្រសិនបើអ្នកមាន file រូបភាពឈ្មោះ logo.jpg ក្នុង folder តែមួយ
+            st.image("One (cycle).png", width=100) 
+        except:
+    # បើរកមិនឃើញ ឱ្យវាបង្ហាញត្រឹមឈ្មោះហាង កុំឱ្យវា Error គាំង App
+            st.title("មួយ (១)")
         
         st.header("📝 គ្រប់គ្រងទិន្នន័យ")
         with st.form("add_product", clear_on_submit=True):
