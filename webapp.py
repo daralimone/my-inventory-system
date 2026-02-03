@@ -58,8 +58,10 @@ def login():
 if login():
 
 
-    with st.sidebar:
-        st.header("📝 គ្រប់គ្រងទិន្នន័យ")
+    # ឧទាហរណ៍៖ បន្ថែមរូបភាព Logo ក្នុង Sidebar
+with st.sidebar:
+    st.image("https://scontent-ams2-1.xx.fbcdn.net/v/t39.30808-6/616852928_1482523783878367_9007683925897413730_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=hkJ9o0otzd0Q7kNvwFh8E_0&_nc_oc=AdlhXgG1fUL2U928bjoqnc1mbK6q6kj5VZ9GV0n4nlYUU7ST2zkvVczih-lZsiU3fe_Lim-Siw57v-8Bud-iwTfY&_nc_zt=23&_nc_ht=scontent-ams2-1.xx&_nc_gid=uCN-lQ4gIIcV3sExa7R3-Q&oh=00_AfvHGs6tCVQXUFa1ZrztUegPWshZH6fRm6F5GQ0OibcPsQ&oe=6986F8A7", width=100)
+    st.title("One")
         with st.form("add_product", clear_on_submit=True):
             n_name = st.text_input("ឈ្មោះទំនិញ")
             n_stock = st.number_input("ចំនួនស្តុក", min_value=0)
