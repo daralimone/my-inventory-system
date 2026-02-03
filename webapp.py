@@ -178,15 +178,25 @@ if login():
         st.dataframe(df.style.apply(lambda row: ['background-color: #ffcccc' if row.stock < 5 else '' for _ in row], axis=1), use_container_width=True)
 
     with tab_exp:
-        st.subheader("💸 កត់ត្រាចំណាយ")
-        with st.form("ex_form", clear_on_submit=True):
-            d = st.text_input("ពិពណ៌នា")
-            a = st.number_input("ទឹកប្រាក់ ($)", min_value=0.0)
-            if st.form_submit_button("រក្សាទុក"):
-                if d and a > 0:
+        st.subheader("💸 គ្រប់គ្រងចំណាយ")
+        
+        # បង្កើត Form សម្រាប់បញ្ចូលចំណាយ
+        with st.form("expense_form", clear_on_submit=True):
+            ex_desc = st.text_input("ពិពណ៌នាចំណាយ (ឧ៖ ថ្លៃភ្លើង)")
+            ex_amt = st.number_input("ចំនួនទឹកប្រាក់ ($)", min_value=0.0)
+            submit_ex = st.form_submit_button("រក្សាទុកចំណាយ")
+            
+            if submit_ex:
+                if ex_desc and ex_amt > 0:
                     with sqlite3.connect('business.db') as conn:
-                        conn.execute("INSERT INTO expenses (description, amount) VALUES (?, ?)", (d, a))
+                        conn.execute("INSERT INTO expenses (description, amount) VALUES (?, ?)", (ex_desc, ex_amt))
+                    st.success("បានរក្សាទុក!")
                     st.rerun()
+
+        # ជួរ st.divider() ត្រូវតែស្ថិតនៅក្នុង tab_exp ដែរ (ត្រូវ Tab ចូលក្នុង)
+        st.divider() 
+        
+        st.subheader("📜 ប្រវត្តិចំណាយ")
         st.dataframe(exp_df, use_container_width=True)
 
     with tab_rep:
