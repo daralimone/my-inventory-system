@@ -1,5 +1,5 @@
 streamlit
 pandas
 requests
-fpdf
+fpdf2
 extra-streamlit-components
