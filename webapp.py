@@ -5,7 +5,7 @@ import io
 import requests
 from sqlalchemy import create_engine, text
 from extra_streamlit_components import CookieManager
-from fpdf import FPDFgit
+from fpdf import FPDF
 
 # --- ១. ការរៀបចំការភ្ជាប់ទៅ Supabase ---
 # ត្រូវប្រាកដថាបានដាក់ [database] url ក្នុង Streamlit Secrets រួចរាល់
