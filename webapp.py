@@ -199,3 +199,27 @@ if login():
                 # បង្ហាញតារាងប្រវត្តិលក់លម្អិត
                 st.subheader("📜 ប្រវត្តិលក់លម្អិត")
                 st.dataframe(sales_df, use_container_width=True)
+    # បន្ថែម Tab ថ្មីឈ្មោះ "💸 ចំណាយ"
+tab_pos, tab_inv, tab_rep, tab_exp = st.tabs(["💰 ផ្នែកលក់ (POS)", "📦 ស្តុកទំនិញ", "📊 របាយការណ៍", "💸 ចំណាយ"])
+
+with tab_exp:
+    st.subheader("📝 កត់ត្រាចំណាយថ្មី")
+    with st.form("expense_form", clear_on_submit=True):
+        ex_desc = st.text_input("ពណ៌នាពីការចំណាយ (ឧ៖ ថ្លៃភ្លើង, ថ្លៃជួលតូប...)")
+        ex_amount = st.number_input("ចំនួនទឹកប្រាក់ ($)", min_value=0.0, format="%.2f")
+        if st.form_submit_button("រក្សាទុកចំណាយ"):
+            if ex_desc and ex_amount > 0:
+                with sqlite3.connect('business.db') as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("INSERT INTO expenses (description, amount) VALUES (?, ?)", (ex_desc, ex_amount))
+                    conn.commit()
+                st.success("បានកត់ត្រាចំណាយរួចរាល់!")
+                st.rerun()
+            else:
+                st.warning("សូមបំពេញព័ត៌មានឱ្យបានគ្រប់គ្រាន់!")
+
+    st.divider()
+    st.subheader("📜 ប្រវត្តិចំណាយ")
+    with sqlite3.connect('business.db') as conn:
+        exp_df = pd.read_sql_query("SELECT * FROM expenses ORDER BY date DESC", conn)
+        st.dataframe(exp_df, use_container_width=True)
