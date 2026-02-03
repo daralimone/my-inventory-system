@@ -57,16 +57,19 @@ def login():
 # ចាប់ផ្ដើមដំណើរការកម្មវិធីចម្បង
 if login():
     with st.sidebar:
-        # បង្ហាញឈ្មោះហាងជាមុនសិន (ឱ្យឃើញជានិច្ច)
-        st.title("មួយ (១)") 
-        
-        # បន្ទាប់មកសាកល្បងបង្ហាញរូបភាព បើរកមិនឃើញក៏មិនថ្វី
+        # ១. បង្ហាញ Logo ជាមុនសិន
         try:
-            st.image("logo.png", width=100) 
+            # បង្កើត Column ដើម្បីឱ្យ Logo នៅចំកណ្តាល Sidebar
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                st.image("logo.png", width=100)
         except:
-            st.info("Logo មិនទាន់ត្រូវបានដំឡើង")
+            st.info("រកមិនឃើញ Logo")
 
-        st.divider() # បន្ថែមបន្ទាត់កាត់ដើម្បីឱ្យមើលទៅស្អាត
+        # ២. បង្ហាញឈ្មោះ "មួយ (១)" នៅពីក្រោម និងចំកណ្តាល
+        st.markdown("<h1 style='text-align: center; font-size: 25px;'>មួយ (១)</h1>", unsafe_allow_html=True)
+        
+        st.divider() # បន្ថែមបន្ទាត់កាត់ដើម្បីភាពរៀបរយ
         
         st.header("📝 គ្រប់គ្រងទិន្នន័យ")
         with st.form("add_product", clear_on_submit=True):
