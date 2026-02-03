@@ -4,6 +4,8 @@ import pandas as pd
 import time
 import io
 from extra_streamlit_components import CookieManager
+# បន្ថែមបណ្ណាល័យ Google Sheets មកវិញ
+
 st.set_page_config(page_title="ប្រព័ន្ធគ្រប់គ្រងអាជីវកម្ម", layout="wide")
 cookie_manager = CookieManager()
 
@@ -20,14 +22,12 @@ def init_db():
 
 init_db()
 
-# មុខងារទាញយកជា Excel
 def to_excel(df):
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         df.to_excel(writer, index=False, sheet_name='Sheet1')
     return output.getvalue()
 
-# ប្រព័ន្ធ Login
 def login():
     try:
         CORRECT_USER = st.secrets["credentials"]["username"]
@@ -55,11 +55,12 @@ def login():
         return False
     return True
 
-# --- ២. ដំណើរការកម្មវិធីចម្បង ---
 if login():
-    # បង្កើត Connection ទៅកាន់ Google Sheets
-    # ចំណាំ៖ ត្រូវកំណត់ [connections.gsheets] ក្នុង Secrets ជាមុនសិន
-    
+    # ១. បង្កើត Connection ទៅកាន់ Google Sheets
+    try:
+        conn_gsheet = st.connection("gsheets", type=GSheetsConnection)
+    except Exception as e:
+        conn_gsheet = None
 
     with st.sidebar:
         st.header("📝 គ្រប់គ្រងទិន្នន័យ")
@@ -82,7 +83,6 @@ if login():
             st.session_state["logged_in"] = False
             st.rerun()
 
-    # ទាញទិន្នន័យពី Database
     with sqlite3.connect('business.db') as conn:
         df = pd.read_sql_query("SELECT * FROM products", conn)
         sales_df = pd.read_sql_query("SELECT * FROM sales_history ORDER BY sale_time DESC", conn)
@@ -140,8 +140,19 @@ if login():
             st.divider()
             
             col_exp1, col_exp2 = st.columns(2)
-            # ប៊ូតុងទាញយក Excel
             col_exp1.download_button("📥 ទាញយកជា Excel", data=to_excel(sales_df), file_name='report.xlsx')
+            
+            # ២. បន្ថែមប៊ូតុងបញ្ជូនទៅ Google Sheets មកវិញ
+            if col_exp2.button("📤 បញ្ជូនទៅ Google Sheets"):
+                if conn_gsheet:
+                    try:
+                        conn_gsheet.update(data=sales_df)
+                        st.success("✅ បានបញ្ជូនទៅ Google Sheets រួចរាល់!")
+                    except Exception as e:
+                        st.error(f"បញ្ហា Google Sheets: {e}")
+                else:
+                    st.error("មិនអាចភ្ជាប់ទៅ Google Sheets បានទេ។ សូមពិនិត្យមើលការកំណត់ Secrets!")
+
             st.subheader("📈 ក្រាហ្វិកចំណូល")
             daily_rev = sales_df.groupby(pd.to_datetime(sales_df['sale_time']).dt.date)['total_price'].sum()
             st.line_chart(daily_rev)
