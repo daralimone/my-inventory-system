@@ -77,8 +77,8 @@ def init_db():
 
 # --- ៤. ប្រព័ន្ធសុវត្ថិភាព (LOGIN) ---
 
-        st.set_page_config(page_title="ប្រព័ន្ធគ្រប់គ្រងអាជីវកម្ម One (1)", layout="wide")
-        cookie_manager = CookieManager()
+    st.set_page_config(page_title="ប្រព័ន្ធគ្រប់គ្រងអាជីវកម្ម One (1)", layout="wide")
+    cookie_manager = CookieManager()
 
 def login():
     if "logged_in" not in st.session_state: 
