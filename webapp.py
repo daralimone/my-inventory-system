@@ -1,22 +1,16 @@
 import streamlit as st
-import sqlite3
 import pandas as pd
 import time
 import io
 import requests
-from sqlalchemy import create_engine
-
-# ភ្ជាប់ទៅ Supabase តាមរយៈ URL ក្នុង Secrets
-db_url = st.secrets["database"]["url"]
-engine = create_engine(db_url)
-
-# ឧទាហរណ៍៖ ទាញយកបញ្ជីទំនិញ
-df = pd.read_sql("SELECT * FROM products", engine)
-
-# ឧទាហរណ៍៖ បញ្ចូលទំនិញថ្មី
-df_new.to_sql('products', engine, if_exists='append', index=False)
+from sqlalchemy import create_engine, text
 from extra_streamlit_components import CookieManager
 from fpdf import FPDF
+
+# --- ១. ការរៀបចំការភ្ជាប់ទៅ Supabase ---
+# ត្រូវប្រាកដថាបានដាក់ [database] url ក្នុង Streamlit Secrets រួចរាល់
+db_url = st.secrets["database"]["url"]
+engine = create_engine(db_url)
 
 # --- មុខងារផ្ញើសារ Telegram ---
 def send_telegram_msg(message):
@@ -47,18 +41,22 @@ def generate_receipt(item_name, qty, price, total):
     pdf.cell(200, 10, txt="Thank you for shopping with us!", ln=True, align='C')
     return pdf.output(dest='S').encode('latin-1', 'ignore')
 
-st.set_page_config(page_title="ប្រព័ន្ធគ្រប់គ្រងអាជីវកម្ម", layout="wide")
+st.set_page_config(page_title="ប្រព័ន្ធគ្រប់គ្រងអាជីវកម្ម One (1)", layout="wide")
 cookie_manager = CookieManager()
 
-# --- បង្កើត Database ---
+# --- ២. បង្កើតតារាងក្នុង Supabase (ប្រសិនបើមិនទាន់មាន) ---
 def init_db():
-    conn = sqlite3.connect('business.db')
-    cursor = conn.cursor()
-    cursor.execute('CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, stock INTEGER, cost REAL, price REAL)')
-    cursor.execute('CREATE TABLE IF NOT EXISTS sales_history (id INTEGER PRIMARY KEY AUTOINCREMENT, product_name TEXT, quantity INTEGER, cost_price REAL, sale_price REAL, total_price REAL, sale_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP)')
-    cursor.execute('CREATE TABLE IF NOT EXISTS expenses (id INTEGER PRIMARY KEY AUTOINCREMENT, description TEXT, amount REAL, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP)')
-    conn.commit()
-    conn.close()
+    with engine.begin() as conn:
+        # តារាងផលិតផល
+        conn.execute(text("""CREATE TABLE IF NOT EXISTS products 
+                            (id SERIAL PRIMARY KEY, name TEXT UNIQUE, stock INTEGER, cost REAL, price REAL)"""))
+        # តារាងប្រវត្តិលក់
+        conn.execute(text("""CREATE TABLE IF NOT EXISTS sales_history 
+                            (id SERIAL PRIMARY KEY, product_name TEXT, quantity INTEGER, 
+                             cost_price REAL, sale_price REAL, total_price REAL, sale_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"""))
+        # តារាងចំណាយ
+        conn.execute(text("""CREATE TABLE IF NOT EXISTS expenses 
+                            (id SERIAL PRIMARY KEY, description TEXT, amount REAL, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"""))
 
 init_db()
 
@@ -68,7 +66,7 @@ def login():
         CORRECT_USER = st.secrets["credentials"]["username"]
         CORRECT_PASS = st.secrets["credentials"]["password"]
     except:
-        st.error("សូមកំណត់ Secrets ក្នុង Streamlit Cloud!")
+        st.error("សូមកំណត់ Secrets (credentials) ក្នុង Streamlit Cloud!")
         return False
     
     if "logged_in" not in st.session_state: 
@@ -112,75 +110,63 @@ if login():
             n_price = st.number_input("តម្លៃលក់ ($)", min_value=0.0)
             if st.form_submit_button("បញ្ចូលទំនិញ"):
                 if n_name:
-                    with sqlite3.connect('business.db') as conn:
-                        conn.execute("INSERT INTO products (name, stock, cost, price) VALUES (?, ?, ?, ?)", (n_name, n_stock, n_cost, n_price))
-                    st.success("បានបញ្ចូលទំនិញ!")
+                    new_item = pd.DataFrame([{"name": n_name, "stock": n_stock, "cost": n_cost, "price": n_price}])
+                    new_item.to_sql('products', engine, if_exists='append', index=False)
+                    st.success("បានបញ្ចូលទំនិញទៅកាន់ Supabase!")
                     st.rerun()
-        
-        st.divider()
-        st.header("💾 ការពារទិន្នន័យ")
-        try:
-            with open("business.db", "rb") as f:
-                db_binary = f.read()
-            st.download_button(
-                label="📥 Backup Database (.db)",
-                data=db_binary,
-                file_name=f"backup_one_store_{time.strftime('%Y%m%d')}.db",
-                mime="application/octet-stream"
-            )
-        except:
-            st.write("មិនទាន់មានទិន្នន័យសម្រាប់ Backup")
 
         if st.button("ចាកចេញ (Log out)"):
             cookie_manager.delete("is_logged_in")
             st.session_state["logged_in"] = False
             st.rerun()
 
-    # --- ទាញទិន្នន័យ ---
-    with sqlite3.connect('business.db') as conn:
-        df = pd.read_sql_query("SELECT * FROM products", conn)
-        sales_df = pd.read_sql_query("SELECT * FROM sales_history ORDER BY sale_time DESC", conn)
-        exp_df = pd.read_sql_query("SELECT * FROM expenses ORDER BY date DESC", conn)
+    # --- ៣. ទាញទិន្នន័យពី Supabase ---
+    with engine.connect() as conn:
+        df = pd.read_sql_table("products", conn)
+        sales_df = pd.read_sql_table("sales_history", conn)
+        exp_df = pd.read_sql_table("expenses", conn)
 
-    # --- Tabs ---
     tab_pos, tab_inv, tab_exp, tab_rep = st.tabs(["💰 ផ្នែកលក់ (POS)", "📦 ស្តុកទំនិញ", "💸 ចំណាយ", "📊 របាយការណ៍"])
 
     with tab_pos:
         st.subheader("🛒 លក់ទំនិញចេញ")
         if not df.empty:
             col1, col2 = st.columns(2)
-            item = col1.selectbox("រើសទំនិញ", df['name'])
+            item_name = col1.selectbox("រើសទំនិញ", df['name'])
             qty = col2.number_input("ចំនួនលក់", min_value=1, step=1)
-            cur = df[df['name'] == item].iloc[0]
+            cur = df[df['name'] == item_name].iloc[0]
             total_p = qty * cur['price']
             
             if st.button(f"បញ្ជាក់ការលក់ (សរុប: ${total_p:,.2f})"):
                 if cur['stock'] >= qty:
-                    with sqlite3.connect('business.db') as conn:
-                        conn.execute("UPDATE products SET stock = stock - ? WHERE name = ?", (qty, item))
-                        conn.execute("INSERT INTO sales_history (product_name, quantity, cost_price, sale_price, total_price) VALUES (?, ?, ?, ?, ?)", 
-                                       (item, qty, cur['cost'], cur['price'], total_p))
+                    with engine.begin() as conn:
+                        # កាត់ស្តុក
+                        conn.execute(text("UPDATE products SET stock = stock - :q WHERE name = :n"), {"q": qty, "n": item_name})
+                        # កត់ត្រាប្រវត្តិលក់
+                        conn.execute(text("""INSERT INTO sales_history (product_name, quantity, cost_price, sale_price, total_price) 
+                                            VALUES (:n, :q, :c, :p, :t)"""), 
+                                     {"n": item_name, "q": qty, "c": cur['cost'], "p": cur['price'], "t": total_p})
                     
-                    send_telegram_msg(f"🛍️ លក់ថ្មី៖ {item} x {qty} | សរុប៖ ${total_p:,.2f}")
-                    st.success(f"បានលក់ {item} រួចរាល់!")
-                    pdf_data = generate_receipt(item, qty, cur['price'], total_p)
-                    st.download_button(label="📄 ទាញយកវិក្កយបត្រ (PDF)", data=pdf_data, file_name=f"receipt_{item}.pdf", mime="application/pdf")
+                    send_telegram_msg(f"🛍️ លក់ថ្មី៖ {item_name} x {qty} | សរុប៖ ${total_p:,.2f}")
+                    st.success(f"បានលក់ {item_name} រួចរាល់!")
+                    pdf_data = generate_receipt(item_name, qty, cur['price'], total_p)
+                    st.download_button(label="📄 ទាញយកវិក្កយបត្រ (PDF)", data=pdf_data, file_name=f"receipt_{item_name}.pdf", mime="application/pdf")
+                    st.rerun()
                 else:
                     st.error("ស្តុកមិនគ្រប់គ្រាន់!")
 
     with tab_inv:
-        st.subheader("📦 បញ្ជីស្តុកបច្ចុប្បន្ន")
+        st.subheader("📦 បញ្ជីស្តុក (Supabase)")
         st.dataframe(df.style.apply(lambda row: ['background-color: #ffcccc' if row.stock < 5 else '' for _ in row], axis=1), use_container_width=True)
         
         st.divider()
-        st.subheader("🗑️ លុបទំនិញចេញពីបញ្ជី")
+        st.subheader("🗑️ លុបទំនិញ")
         if not df.empty:
-            item_to_delete = st.selectbox("ជ្រើសរើសទំនិញដែលចង់លុប", df['name'])
-            if st.button(f"លុប {item_to_delete} ចេញជាស្ថាពរ", type="primary"):
-                with sqlite3.connect('business.db') as conn:
-                    conn.execute("DELETE FROM products WHERE name = ?", (item_to_delete,))
-                st.warning(f"បានលុប {item_to_delete} រួចរាល់!")
-                time.sleep(1)
+            del_item = st.selectbox("ជ្រើសរើសទំនិញដែលចង់លុប", df['name'], key="del_box")
+            if st.button(f"លុប {del_item} ជាស្ថាពរ", type="primary"):
+                with engine.begin() as conn:
+                    conn.execute(text("DELETE FROM products WHERE name = :n"), {"n": del_item})
+                st.warning("បានលុប!")
                 st.rerun()
 
     with tab_exp:
@@ -190,10 +176,9 @@ if login():
             a = st.number_input("ទឹកប្រាក់ ($)", min_value=0.0)
             if st.form_submit_button("រក្សាទុក"):
                 if d and a > 0:
-                    with sqlite3.connect('business.db') as conn:
-                        conn.execute("INSERT INTO expenses (description, amount) VALUES (?, ?)", (d, a))
+                    new_exp = pd.DataFrame([{"description": d, "amount": a}])
+                    new_exp.to_sql('expenses', engine, if_exists='append', index=False)
                     st.rerun()
-        st.divider()
         st.dataframe(exp_df, use_container_width=True)
 
     with tab_rep:
@@ -204,7 +189,6 @@ if login():
         c1.metric("ចំណូលសរុប", f"${rev:,.2f}")
         c2.metric("ចំណាយសរុប", f"${exp:,.2f}")
         
-        # គណនាចំណេញ (ដកទាំងថ្លៃដើម និងចំណាយផ្សេងៗ)
         cogs = (sales_df['cost_price'] * sales_df['quantity']).sum() if not sales_df.empty else 0
         profit = rev - cogs - exp
         c3.metric("ចំណេញសុទ្ធ", f"${profit:,.2f}")
@@ -215,7 +199,7 @@ if login():
         st.divider()
         if st.checkbox("🛠️ បង្ហាញមុខងារសម្អាតទិន្នន័យ"):
             if st.button("❌ លុបប្រវត្តិលក់ទាំងអស់", type="primary"):
-                with sqlite3.connect('business.db') as conn:
-                    conn.execute("DELETE FROM sales_history")
-                st.success("បានសម្អាតប្រវត្តិលក់រួចរាល់!")
+                with engine.begin() as conn:
+                    conn.execute(text("TRUNCATE TABLE sales_history"))
+                st.success("បានសម្អាត!")
                 st.rerun()
