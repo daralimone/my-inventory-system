@@ -7,7 +7,11 @@ from sqlalchemy import create_engine, text
 from extra_streamlit_components import CookieManager
 from fpdf import FPDF
 
-# --- ១. ការភ្ជាប់ទៅកាន់ SUPABASE (ប្រើតែ SQLAlchemy មួយគត់គឺគ្រប់គ្រាន់) ---
+# --- ១. ការរៀបចំទំព័រ (ត្រូវតែនៅខាងលើគេបង្អស់) ---
+st.set_page_config(page_title="ប្រព័ន្ធគ្រប់គ្រងអាជីវកម្ម One (1)", layout="wide")
+cookie_manager = CookieManager()
+
+# --- ២. ការភ្ជាប់ទៅកាន់ SUPABASE ---
 try:
     db_url = st.secrets["database"]["url"]
     engine = create_engine(db_url)
@@ -15,7 +19,7 @@ except Exception as e:
     st.error("សូមកំណត់ Database URL ក្នុង Secrets ឱ្យបានត្រឹមត្រូវ!")
     st.stop()
 
-# --- ២. មុខងារជំនួយ (HELPER FUNCTIONS) ---
+# --- ៣. មុខងារជំនួយ (HELPER FUNCTIONS) ---
 
 def send_telegram_msg(message):
     token = "8555663996:AAExEgJFLytVVIpg7YYd0UEUkoML7mV38RM" 
@@ -44,7 +48,7 @@ def generate_receipt(item_name, qty, price, total):
     pdf.cell(200, 10, txt="Thank you for shopping with us!", ln=True, align='C')
     return pdf.output(dest='S').encode('latin-1', 'ignore')
 
-# --- ៣. ការរៀបចំ DATABASE ---
+# --- ៤. ការរៀបចំ DATABASE ---
 
 def init_db():
     with engine.begin() as conn:
@@ -73,17 +77,16 @@ def init_db():
             );
         """))
 
-    init_db()
+# ហៅប្រើមុខងារបង្កើតតារាង (ត្រូវនៅខាងក្រៅ function)
+init_db()
 
-# --- ៤. ប្រព័ន្ធសុវត្ថិភាព (LOGIN) ---
-
-    st.set_page_config(page_title="ប្រព័ន្ធគ្រប់គ្រងអាជីវកម្ម One (1)", layout="wide")
-    cookie_manager = CookieManager()
+# --- ៥. ប្រព័ន្ធសុវត្ថិភាព (LOGIN) ---
 
 def login():
     if "logged_in" not in st.session_state: 
         st.session_state["logged_in"] = False
     
+    # ប្រើ cookie_manager (អក្សរតូច) ដែលជា Instance
     if cookie_manager.get(cookie="is_logged_in") == "true":
         st.session_state["logged_in"] = True
 
@@ -92,7 +95,6 @@ def login():
         u = st.text_input("Username")
         p = st.text_input("Password", type="password")
         if st.button("ចូលប្រើ"):
-            # កែសម្រួលឱ្យហៅតាម Key 'username' និង 'password' ក្នុង Secrets
             if u == st.secrets["credentials"]["username"] and p == st.secrets["credentials"]["password"]:
                 cookie_manager.set("is_logged_in", "true", max_age=86400)
                 st.session_state["logged_in"] = True
@@ -102,95 +104,95 @@ def login():
         return False
     return True
 
-# --- ៥. ដំណើរការកម្មវិធី ---
+# --- ៦. ដំណើរការកម្មវិធីចម្បង ---
 
-    if login():
-        with st.sidebar:
-            st.markdown("<h2 style='text-align: center;'>🏪 ហាង មួយ (១)</h2>", unsafe_allow_html=True)
-            st.divider()
-            st.subheader("📝 បន្ថែមទំនិញថ្មី")
-            with st.form("add_product", clear_on_submit=True):
-                n_name = st.text_input("ឈ្មោះទំនិញ")
-                n_stock = st.number_input("ចំនួនស្តុក", min_value=0)
-                n_cost = st.number_input("តម្លៃដើម ($)", min_value=0.0)
-                n_price = st.number_input("តម្លៃលក់ ($)", min_value=0.0)
-                if st.form_submit_button("បញ្ចូលទំនិញ"):
-                    if n_name:
-                        try:
-                            new_item = pd.DataFrame([{"name": n_name, "stock": n_stock, "cost": n_cost, "price": n_price}])
-                            new_item.to_sql('products', engine, if_exists='append', index=False)
-                            st.success("បានបញ្ចូលជោគជ័យ!")
-                            st.rerun()
-                        except:
-                            st.error("ឈ្មោះទំនិញនេះមានរួចហើយ!")
-
-            if st.button("ចាកចេញ (Log out)"):
-                cookie_manager.delete("is_logged_in")
-                st.session_state["logged_in"] = False
-                st.rerun()
-
-        # ទាញទិន្នន័យ
-        with engine.connect() as conn:
-            df_products = pd.read_sql_table("products", conn)
-            df_sales = pd.read_sql_table("sales_history", conn)
-            df_expenses = pd.read_sql_table("expenses", conn)
-
-            tab_pos, tab_inv, tab_exp, tab_rep = st.tabs(["💰 ផ្នែកលក់", "📦 ស្តុក", "💸 ចំណាយ", "📊 របាយការណ៍"])
-
-        with tab_pos:
-            st.subheader("🛒 លក់ទំនិញ")
-            if not df_products.empty:
-                col1, col2 = st.columns(2)
-                selected_item = col1.selectbox("រើសទំនិញ", df_products['name'])
-                sale_qty = col2.number_input("ចំនួនលក់", min_value=1, step=1)
-                
-                product_data = df_products[df_products['name'] == selected_item].iloc[0]
-                total_price = sale_qty * product_data['price']
-                
-                if st.button(f"លក់ចេញ (សរុប: ${total_price:,.2f})", type="primary"):
-                    if product_data['stock'] >= sale_qty:
-                        with engine.begin() as conn:
-                            conn.execute(text("UPDATE products SET stock = stock - :q WHERE name = :n"), {"q": sale_qty, "n": selected_item})
-                            conn.execute(text("""INSERT INTO sales_history (product_name, quantity, cost_price, sale_price, total_price) 
-                                                VALUES (:n, :q, :c, :p, :t)"""), 
-                                        {"n": selected_item, "q": sale_qty, "c": product_data['cost'], "p": product_data['price'], "t": total_price})
-                        
-                        send_telegram_msg(f"🛍️ លក់៖ {selected_item} x {sale_qty} | សរុប៖ ${total_price:,.2f}")
-                        st.success("លក់ជោគជ័យ!")
-                        st.download_button(label="📄 វិក្កយបត្រ (PDF)", data=generate_receipt(selected_item, sale_qty, product_data['price'], total_price), file_name=f"receipt_{selected_item}.pdf", mime="application/pdf")
+if login():
+    with st.sidebar:
+        st.markdown("<h2 style='text-align: center;'>🏪 ហាង មួយ (១)</h2>", unsafe_allow_html=True)
+        st.divider()
+        st.subheader("📝 បន្ថែមទំនិញថ្មី")
+        with st.form("add_product", clear_on_submit=True):
+            n_name = st.text_input("ឈ្មោះទំនិញ")
+            n_stock = st.number_input("ចំនួនស្តុក", min_value=0)
+            n_cost = st.number_input("តម្លៃដើម ($)", min_value=0.0)
+            n_price = st.number_input("តម្លៃលក់ ($)", min_value=0.0)
+            if st.form_submit_button("បញ្ចូលទំនិញ"):
+                if n_name:
+                    try:
+                        new_item = pd.DataFrame([{"name": n_name, "stock": n_stock, "cost": n_cost, "price": n_price}])
+                        new_item.to_sql('products', engine, if_exists='append', index=False)
+                        st.success("បានបញ្ចូលជោគជ័យ!")
                         st.rerun()
+                    except:
+                        st.error("ឈ្មោះទំនិញនេះមានរួចហើយ!")
 
-        with tab_inv:
-            st.subheader("📦 បញ្ជីស្តុក")
-            st.dataframe(df_products, use_container_width=True)
-            if not df_products.empty:
-                item_to_del = st.selectbox("លុបទំនិញ", df_products['name'])
-                if st.button("លុបចោល"):
+        if st.button("ចាកចេញ (Log out)"):
+            cookie_manager.delete("is_logged_in")
+            st.session_state["logged_in"] = False
+            st.rerun()
+
+    # ទាញទិន្នន័យ
+    with engine.connect() as conn:
+        df_products = pd.read_sql_table("products", conn)
+        df_sales = pd.read_sql_table("sales_history", conn)
+        df_expenses = pd.read_sql_table("expenses", conn)
+
+    tab_pos, tab_inv, tab_exp, tab_rep = st.tabs(["💰 ផ្នែកលក់", "📦 ស្តុក", "💸 ចំណាយ", "📊 របាយការណ៍"])
+
+    with tab_pos:
+        st.subheader("🛒 លក់ទំនិញ")
+        if not df_products.empty:
+            col1, col2 = st.columns(2)
+            selected_item = col1.selectbox("រើសទំនិញ", df_products['name'])
+            sale_qty = col2.number_input("ចំនួនលក់", min_value=1, step=1)
+            
+            product_data = df_products[df_products['name'] == selected_item].iloc[0]
+            total_price = sale_qty * product_data['price']
+            
+            if st.button(f"លក់ចេញ (សរុប: ${total_price:,.2f})", type="primary"):
+                if product_data['stock'] >= sale_qty:
                     with engine.begin() as conn:
-                        conn.execute(text("DELETE FROM products WHERE name = :n"), {"n": item_to_del})
+                        conn.execute(text("UPDATE products SET stock = stock - :q WHERE name = :n"), {"q": sale_qty, "n": selected_item})
+                        conn.execute(text("""INSERT INTO sales_history (product_name, quantity, cost_price, sale_price, total_price) 
+                                            VALUES (:n, :q, :c, :p, :t)"""), 
+                                    {"n": selected_item, "q": sale_qty, "c": product_data['cost'], "p": product_data['price'], "t": total_price})
+                    
+                    send_telegram_msg(f"🛍️ លក់៖ {selected_item} x {sale_qty} | សរុប៖ ${total_price:,.2f}")
+                    st.success("លក់ជោគជ័យ!")
+                    st.download_button(label="📄 វិក្កយបត្រ (PDF)", data=generate_receipt(selected_item, sale_qty, product_data['price'], total_price), file_name=f"receipt_{selected_item}.pdf", mime="application/pdf")
                     st.rerun()
 
-        with tab_exp:
-            st.subheader("💸 ចំណាយ")
-            with st.form("exp_form", clear_on_submit=True):
-                d = st.text_input("ពិពណ៌នា")
-                a = st.number_input("ទឹកប្រាក់ ($)", min_value=0.0)
-                if st.form_submit_button("រក្សាទុក"):
-                    if d and a > 0:
-                        pd.DataFrame([{"description": d, "amount": a}]).to_sql('expenses', engine, if_exists='append', index=False)
-                        st.rerun()
-            st.dataframe(df_expenses, use_container_width=True)
+    with tab_inv:
+        st.subheader("📦 បញ្ជីស្តុក")
+        st.dataframe(df_products, use_container_width=True)
+        if not df_products.empty:
+            item_to_del = st.selectbox("លុបទំនិញ", df_products['name'])
+            if st.button("លុបចោល"):
+                with engine.begin() as conn:
+                    conn.execute(text("DELETE FROM products WHERE name = :n"), {"n": item_to_del})
+                st.rerun()
 
-        with tab_rep:
-            st.subheader("📊 របាយការណ៍")
-            rev = df_sales['total_price'].sum() if not df_sales.empty else 0
-            exp = df_expenses['amount'].sum() if not df_expenses.empty else 0
-            cogs = (df_sales['cost_price'] * df_sales['quantity']).sum() if not df_sales.empty else 0
-            st.metric("ចំណេញសុទ្ធ", f"${(rev - cogs - exp):,.2f}")
-            
-            # ប៊ូតុង Excel
-            buffer = io.BytesIO()
-            with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-                df_sales.to_excel(writer, sheet_name='Sales', index=False)
-                df_products.to_excel(writer, sheet_name='Stock', index=False)
-            st.download_button(label="📊 ទាញយក Excel", data=buffer.getvalue(), file_name="report.xlsx") 
+    with tab_exp:
+        st.subheader("💸 ចំណាយ")
+        with st.form("exp_form", clear_on_submit=True):
+            d = st.text_input("ពិពណ៌នា")
+            a = st.number_input("ទឹកប្រាក់ ($)", min_value=0.0)
+            if st.form_submit_button("រក្សាទុក"):
+                if d and a > 0:
+                    pd.DataFrame([{"description": d, "amount": a}]).to_sql('expenses', engine, if_exists='append', index=False)
+                    st.rerun()
+        st.dataframe(df_expenses, use_container_width=True)
+
+    with tab_rep:
+        st.subheader("📊 របាយការណ៍")
+        rev = df_sales['total_price'].sum() if not df_sales.empty else 0
+        exp = df_expenses['amount'].sum() if not df_expenses.empty else 0
+        cogs = (df_sales['cost_price'] * df_sales['quantity']).sum() if not df_sales.empty else 0
+        st.metric("ចំណេញសុទ្ធ", f"${(rev - cogs - exp):,.2f}")
+        
+        # ប៊ូតុង Excel
+        buffer = io.BytesIO()
+        with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+            df_sales.to_excel(writer, sheet_name='Sales', index=False)
+            df_products.to_excel(writer, sheet_name='Stock', index=False)
+        st.download_button(label="📊 ទាញយក Excel", data=buffer.getvalue(), file_name="report.xlsx")
