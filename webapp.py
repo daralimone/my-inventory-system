@@ -138,7 +138,7 @@ def login():
         u = st.text_input("Username")
         p = st.text_input("Password", type="password")
         if st.button("ចូលប្រើ"):
-            if u == st.secrets["credentials"]["username"] and p == st.secrets["credentials"]["password"]:
+            if u == st.secrets["credentials"]["daralim.one@icloud.com"] and p == st.secrets["credentials"]["aSd.12345678"]:
                 cookie_manager.set("is_logged_in", "true", max_age=86400)
                 st.session_state["logged_in"] = True
                 st.rerun()
