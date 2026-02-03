@@ -80,7 +80,6 @@ def login():
     return True
 
 if login():
-    # --- Sidebar ---
     with st.sidebar:
         st.markdown("<style>.stButton>button { width: 100%; border-radius: 5px; height: 3em; background-color: #007bff; color: white; }</style>", unsafe_allow_html=True)
         
@@ -106,21 +105,8 @@ if login():
                         conn.execute("INSERT INTO products (name, stock, cost, price) VALUES (?, ?, ?, ?)", (n_name, n_stock, n_cost, n_price))
                     st.success("បានបញ្ចូលទំនិញ!")
                     st.rerun()
-            # បន្ថែមនៅខាងក្រោមគេបង្អស់នៃ Tab របាយការណ៍
-            if st.checkbox("បង្ហាញមុខងារសម្អាតទិន្នន័យ"):
-                if st.button("❌ លុបប្រវត្តិលក់ទាំងអស់", help="ប្រយ័ត្ន! វានឹងលុបគ្រប់ការលក់ទាំងអស់"):
-                    with sqlite3.connect('business.db') as conn:
-                        conn.execute("DELETE FROM sales_history")
-                        conn.commit()
-                    st.success("បានសម្អាតប្រវត្តិលក់រួចរាល់!")
-                    st.rerun()
         
         st.divider()
-
-        if st.button("ចាកចេញ (Log out)"):
-            cookie_manager.delete("is_logged_in")
-            st.session_state["logged_in"] = False
-            st.rerun()
         st.header("💾 ការពារទិន្នន័យ")
         try:
             with open("business.db", "rb") as f:
@@ -133,6 +119,11 @@ if login():
             )
         except:
             st.write("មិនទាន់មានទិន្នន័យសម្រាប់ Backup")
+
+        if st.button("ចាកចេញ (Log out)"):
+            cookie_manager.delete("is_logged_in")
+            st.session_state["logged_in"] = False
+            st.rerun()
 
     # --- ទាញទិន្នន័យ ---
     with sqlite3.connect('business.db') as conn:
@@ -168,18 +159,15 @@ if login():
 
     with tab_inv:
         st.subheader("📦 បញ្ជីស្តុកបច្ចុប្បន្ន")
-        # បង្ហាញតារាងស្តុក (កូដដែលមានស្រាប់)
         st.dataframe(df.style.apply(lambda row: ['background-color: #ffcccc' if row.stock < 5 else '' for _ in row], axis=1), use_container_width=True)
         
         st.divider()
         st.subheader("🗑️ លុបទំនិញចេញពីបញ្ជី")
         if not df.empty:
-            # បង្កើតបញ្ជីឈ្មោះទំនិញសម្រាប់រើសលុប
             item_to_delete = st.selectbox("ជ្រើសរើសទំនិញដែលចង់លុប", df['name'])
             if st.button(f"លុប {item_to_delete} ចេញជាស្ថាពរ", type="primary"):
                 with sqlite3.connect('business.db') as conn:
                     conn.execute("DELETE FROM products WHERE name = ?", (item_to_delete,))
-                    conn.commit()
                 st.warning(f"បានលុប {item_to_delete} រួចរាល់!")
                 time.sleep(1)
                 st.rerun()
@@ -204,7 +192,19 @@ if login():
         exp = exp_df['amount'].sum() if not exp_df.empty else 0
         c1.metric("ចំណូលសរុប", f"${rev:,.2f}")
         c2.metric("ចំណាយសរុប", f"${exp:,.2f}")
-        profit = rev - (sales_df['cost_price'] * sales_df['quantity']).sum() - exp
+        
+        # គណនាចំណេញ (ដកទាំងថ្លៃដើម និងចំណាយផ្សេងៗ)
+        cogs = (sales_df['cost_price'] * sales_df['quantity']).sum() if not sales_df.empty else 0
+        profit = rev - cogs - exp
         c3.metric("ចំណេញសុទ្ធ", f"${profit:,.2f}")
+        
         if not sales_df.empty:
             st.bar_chart(sales_df.groupby('product_name')['quantity'].sum())
+
+        st.divider()
+        if st.checkbox("🛠️ បង្ហាញមុខងារសម្អាតទិន្នន័យ"):
+            if st.button("❌ លុបប្រវត្តិលក់ទាំងអស់", type="primary"):
+                with sqlite3.connect('business.db') as conn:
+                    conn.execute("DELETE FROM sales_history")
+                st.success("បានសម្អាតប្រវត្តិលក់រួចរាល់!")
+                st.rerun()
