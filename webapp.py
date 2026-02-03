@@ -84,7 +84,7 @@ def login():
     if "logged_in" not in st.session_state: 
         st.session_state["logged_in"] = False
     
-    if CookieManager.get(cookie="is_logged_in") == "true": 
+    if cookie_manager.get(cookie="is_logged_in") == "true":
         st.session_state["logged_in"] = True
 
     if not st.session_state["logged_in"]:
