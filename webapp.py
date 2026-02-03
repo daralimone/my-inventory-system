@@ -31,22 +31,22 @@ def send_telegram_msg(message):
         pass
 
 def generate_receipt(item_name, qty, price, total):
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Helvetica", 'B', 16)
-        pdf.cell(200, 10, txt="ONE (1) STORE - RECEIPT", ln=True, align='C')
-        pdf.ln(10)
-        pdf.set_font("Helvetica", size=12)
-        pdf.cell(200, 10, txt=f"Date: {time.strftime('%Y-%m-%d %H:%M:%S')}", ln=True)
-        pdf.cell(200, 10, txt=f"Item: {item_name}", ln=True)
-        pdf.cell(200, 10, txt=f"Quantity: {qty}", ln=True)
-        pdf.cell(200, 10, txt=f"Unit Price: ${price:.2f}", ln=True)
-        pdf.set_font("Helvetica", 'B', 14)
-        pdf.cell(200, 10, txt=f"Total Amount: ${total:.2f}", ln=True)
-        pdf.ln(10)
-        pdf.set_font("Helvetica", size=10)
-        pdf.cell(200, 10, txt="Thank you for shopping with us!", ln=True, align='C')
-    return pdf.output(dest='S').encode('latin-1', 'ignore')
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Helvetica", 'B', 16)
+    pdf.cell(200, 10, txt="ONE (1) STORE - RECEIPT", ln=True, align='C')
+    pdf.ln(10)
+    pdf.set_font("Helvetica", size=12)
+    pdf.cell(200, 10, txt=f"Date: {time.strftime('%Y-%m-%d %H:%M:%S')}", ln=True)
+    pdf.cell(200, 10, txt=f"Item: {item_name}", ln=True)
+    pdf.cell(200, 10, txt=f"Quantity: {qty}", ln=True)
+    pdf.cell(200, 10, txt=f"Unit Price: ${price:.2f}", ln=True)
+    pdf.set_font("Helvetica", 'B', 14)
+    pdf.cell(200, 10, txt=f"Total Amount: ${total:.2f}", ln=True)
+    pdf.ln(10)
+    pdf.set_font("Helvetica", size=10)
+    pdf.cell(200, 10, txt="Thank you for shopping with us!", ln=True, align='C')
+    return st.pdfpdf.output(dest='S').encode('latin-1', 'ignore')
 
 # --- ៤. ការរៀបចំ DATABASE ---
 
