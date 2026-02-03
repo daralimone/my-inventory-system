@@ -3,3 +3,5 @@ pandas
 requests
 fpdf2
 extra-streamlit-components
+sqlalchemy
+psycopg2-binary

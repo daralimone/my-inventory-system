@@ -4,6 +4,17 @@ import pandas as pd
 import time
 import io
 import requests
+from sqlalchemy import create_engine
+
+# ភ្ជាប់ទៅ Supabase តាមរយៈ URL ក្នុង Secrets
+db_url = st.secrets["database"]["url"]
+engine = create_engine(db_url)
+
+# ឧទាហរណ៍៖ ទាញយកបញ្ជីទំនិញ
+df = pd.read_sql("SELECT * FROM products", engine)
+
+# ឧទាហរណ៍៖ បញ្ចូលទំនិញថ្មី
+df_new.to_sql('products', engine, if_exists='append', index=False)
 from extra_streamlit_components import CookieManager
 from fpdf import FPDF
 
