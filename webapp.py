@@ -108,12 +108,12 @@ if login():
                     st.rerun()
         
         st.divider()
-        st.header("💾 ការពារទិន្នន័យ")
 
         if st.button("ចាកចេញ (Log out)"):
             cookie_manager.delete("is_logged_in")
             st.session_state["logged_in"] = False
             st.rerun()
+        st.header("💾 ការពារទិន្នន័យ")
         try:
             with open("business.db", "rb") as f:
                 db_binary = f.read()
