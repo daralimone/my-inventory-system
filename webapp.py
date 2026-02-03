@@ -9,8 +9,8 @@ from fpdf import FPDF
 
 # --- មុខងារផ្ញើសារ Telegram ---
 def send_telegram_msg(message):
-    token = "YOUR_BOT_TOKEN" # ប្ដូរទីនេះ
-    chat_id = "YOUR_CHAT_ID" # ប្ដូរទីនេះ
+    token = "YOUR_BOT_TOKEN" # កុំភ្លេចប្ដូរ Token ផ្ទាល់ខ្លួន
+    chat_id = "YOUR_CHAT_ID" # កុំភ្លេចប្ដូរ Chat ID ផ្ទាល់ខ្លួន
     url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={message}"
     try:
         requests.get(url)
@@ -21,15 +21,21 @@ def send_telegram_msg(message):
 def generate_receipt(item_name, qty, price, total):
     pdf = FPDF()
     pdf.add_page()
+    pdf.add_font('Arial', '', 'Helvetica', uni=True) # ប្រើ Font ដែល Support លេខ និងអក្សរឡាតាំងបានល្អ
     pdf.set_font("Arial", 'B', 16)
     pdf.cell(200, 10, txt="ONE (1) STORE - RECEIPT", ln=True, align='C')
+    pdf.ln(10)
     pdf.set_font("Arial", size=12)
+    pdf.cell(200, 10, txt=f"Date: {time.strftime('%Y-%m-%d %H:%M:%S')}", ln=True)
     pdf.cell(200, 10, txt=f"Item: {item_name}", ln=True)
     pdf.cell(200, 10, txt=f"Quantity: {qty}", ln=True)
     pdf.cell(200, 10, txt=f"Unit Price: ${price:.2f}", ln=True)
-    pdf.cell(200, 10, txt=f"Total: ${total:.2f}", ln=True)
+    pdf.set_font("Arial", 'B', 14)
+    pdf.cell(200, 10, txt=f"Total Amount: ${total:.2f}", ln=True)
+    pdf.ln(10)
+    pdf.set_font("Arial", size=10)
     pdf.cell(200, 10, txt="Thank you for shopping with us!", ln=True, align='C')
-    return pdf.output(dest='S').encode('latin-1')
+    return pdf.output(dest='S').encode('latin-1', 'ignore')
 
 st.set_page_config(page_title="ប្រព័ន្ធគ្រប់គ្រងអាជីវកម្ម", layout="wide")
 cookie_manager = CookieManager()
@@ -38,13 +44,9 @@ cookie_manager = CookieManager()
 def init_db():
     conn = sqlite3.connect('business.db')
     cursor = conn.cursor()
-    cursor.execute('''CREATE TABLE IF NOT EXISTS products 
-                      (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, stock INTEGER, cost REAL, price REAL)''')
-    cursor.execute('''CREATE TABLE IF NOT EXISTS sales_history 
-                      (id INTEGER PRIMARY KEY AUTOINCREMENT, product_name TEXT, quantity INTEGER, 
-                       cost_price REAL, sale_price REAL, total_price REAL, sale_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
-    cursor.execute('''CREATE TABLE IF NOT EXISTS expenses 
-                      (id INTEGER PRIMARY KEY AUTOINCREMENT, description TEXT, amount REAL, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    cursor.execute('CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, stock INTEGER, cost REAL, price REAL)')
+    cursor.execute('CREATE TABLE IF NOT EXISTS sales_history (id INTEGER PRIMARY KEY AUTOINCREMENT, product_name TEXT, quantity INTEGER, cost_price REAL, sale_price REAL, total_price REAL, sale_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP)')
+    cursor.execute('CREATE TABLE IF NOT EXISTS expenses (id INTEGER PRIMARY KEY AUTOINCREMENT, description TEXT, amount REAL, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP)')
     conn.commit()
     conn.close()
 
@@ -79,17 +81,12 @@ def login():
     return True
 
 if login():
-    # --- Sidebar UI ---
     with st.sidebar:
-        st.markdown("""
-            <style>
-            .stButton>button { width: 100%; border-radius: 5px; height: 3em; background-color: #007bff; color: white; }
-            .centered-container { display: flex; flex-direction: column; align-items: center; text-align: center; }
-            </style>
-            """, unsafe_allow_html=True)
-
+        st.markdown("<style>.stButton>button { width: 100%; border-radius: 5px; height: 3em; background-color: #007bff; color: white; }</style>", unsafe_allow_html=True)
+        
+        # Logo Section
         with st.container():
-            st.markdown('<div class="centered-container">', unsafe_allow_html=True)
+            st.markdown('<div style="text-align: center;">', unsafe_allow_html=True)
             try:
                 st.image("logo.png", width=120)
             except:
@@ -107,8 +104,8 @@ if login():
             if st.form_submit_button("បញ្ចូលទំនិញ"):
                 if n_name:
                     with sqlite3.connect('business.db') as conn:
-                        conn.execute("INSERT INTO products (name, stock, cost, price) VALUES (?, ?, ?, ?)", 
-                                       (n_name, n_stock, n_cost, n_price))
+                        conn.execute("INSERT INTO products (name, stock, cost, price) VALUES (?, ?, ?, ?)", (n_name, n_stock, n_cost, n_price))
+                    st.success("បានបញ្ចូលទំនិញ!")
                     st.rerun()
         
         if st.button("ចាកចេញ (Log out)"):
@@ -116,13 +113,12 @@ if login():
             st.session_state["logged_in"] = False
             st.rerun()
 
-    # --- ទាញទិន្នន័យ ---
+    # Data Loading
     with sqlite3.connect('business.db') as conn:
         df = pd.read_sql_query("SELECT * FROM products", conn)
         sales_df = pd.read_sql_query("SELECT * FROM sales_history ORDER BY sale_time DESC", conn)
         exp_df = pd.read_sql_query("SELECT * FROM expenses ORDER BY date DESC", conn)
 
-    # --- Tabs ---
     tab_pos, tab_inv, tab_exp, tab_rep = st.tabs(["💰 ផ្នែកលក់ (POS)", "📦 ស្តុកទំនិញ", "💸 ចំណាយ", "📊 របាយការណ៍"])
 
     with tab_pos:
@@ -132,51 +128,45 @@ if login():
             item = col1.selectbox("រើសទំនិញ", df['name'])
             qty = col2.number_input("ចំនួនលក់", min_value=1, step=1)
             cur = df[df['name'] == item].iloc[0]
+            total_price = qty * cur['price']
             
-            if st.button(f"បញ្ជាក់ការលក់ (សរុប: ${qty*cur['price']:,.2f})"):
+            if st.button(f"បញ្ជាក់ការលក់ (សរុប: ${total_price:,.2f})"):
                 if cur['stock'] >= qty:
                     with sqlite3.connect('business.db') as conn:
                         conn.execute("UPDATE products SET stock = stock - ? WHERE name = ?", (qty, item))
                         conn.execute("INSERT INTO sales_history (product_name, quantity, cost_price, sale_price, total_price) VALUES (?, ?, ?, ?, ?)", 
-                                       (item, qty, cur['cost'], cur['price'], qty*cur['price']))
+                                       (item, qty, cur['cost'], cur['price'], total_price))
                     
-                    # ផ្ញើសារ Telegram ក្រោយលក់ជោគជ័យ
-                    msg = f"🛍️ ការលក់ថ្មី៖ {item} \n🔢 ចំនួន៖ {qty} \n💰 សរុប៖ ${qty*cur['price']:,.2f}"
-                    send_telegram_msg(msg)
-                    
+                    send_telegram_msg(f"🛍️ លក់ថ្មី៖ {item} x {qty} | សរុប៖ ${total_price:,.2f}")
                     st.success(f"បានលក់ {item} រួចរាល់!")
-                    time.sleep(1)
-                    st.rerun()
+                    
+                    # ប៊ូតុងទាញយកវិក្កយបត្រ
+                    pdf_data = generate_receipt(item, qty, cur['price'], total_price)
+                    st.download_button(label="📄 ទាញយកវិក្កយបត្រ (PDF)", data=pdf_data, file_name=f"receipt_{item}.pdf", mime="application/pdf")
                 else:
                     st.error("ស្តុកមិនគ្រប់គ្រាន់!")
 
     with tab_inv:
-        st.subheader("📦 បញ្ជីទំនិញក្នុងស្តុក")
-        search = st.text_input("🔍 ស្វែងរកក្នុងស្តុក...")
-        display_df = df[df['name'].str.contains(search, case=False)] if search else df
-        
-        def highlight_low_stock(row):
-            return ['background-color: #ffcccc' if row.stock < 5 else '' for _ in row]
-
-        st.dataframe(display_df.style.apply(highlight_low_stock, axis=1), use_container_width=True)
+        st.subheader("📦 បញ្ជីស្តុក")
+        st.dataframe(df.style.apply(lambda row: ['background-color: #ffcccc' if row.stock < 5 else '' for _ in row], axis=1), use_container_width=True)
 
     with tab_exp:
-        st.subheader("💸 គ្រប់គ្រងចំណាយ")
-        with st.form("expense_form", clear_on_submit=True):
-            ex_desc = st.text_input("ពិពណ៌នាចំណាយ")
-            ex_amt = st.number_input("ចំនួនទឹកប្រាក់ ($)", min_value=0.0)
-            if st.form_submit_button("រក្សាទុកចំណាយ"):
-                if ex_desc and ex_amt > 0:
+        st.subheader("💸 កត់ត្រាចំណាយ")
+        with st.form("ex_form", clear_on_submit=True):
+            d = st.text_input("ពិពណ៌នា")
+            a = st.number_input("ទឹកប្រាក់ ($)", min_value=0.0)
+            if st.form_submit_button("រក្សាទុក"):
+                if d and a > 0:
                     with sqlite3.connect('business.db') as conn:
-                        conn.execute("INSERT INTO expenses (description, amount) VALUES (?, ?)", (ex_desc, ex_amt))
+                        conn.execute("INSERT INTO expenses (description, amount) VALUES (?, ?)", (d, a))
                     st.rerun()
         st.dataframe(exp_df, use_container_width=True)
 
     with tab_rep:
-        st.subheader("📊 របាយការណ៍អាជីវកម្ម")
-        if not sales_df.empty:
-            total_rev = sales_df['total_price'].sum()
-            total_exp = exp_df['amount'].sum() if not exp_df.empty else 0
-            st.metric("ចំណូលសរុប", f"${total_rev:,.2f}")
-            st.metric("ចំណាយសរុប", f"${total_exp:,.2f}")
-            st.bar_chart(sales_df.groupby('product_name')['quantity'].sum())
+        st.subheader("📊 របាយការណ៍សង្ខេប")
+        c1, c2, c3 = st.columns(3)
+        c1.metric("ចំណូល", f"${sales_df['total_price'].sum():,.2f}")
+        c2.metric("ចំណាយ", f"${exp_df['amount'].sum():,.2f}")
+        profit = sales_df['total_price'].sum() - (sales_df['cost_price'] * sales_df['quantity']).sum() - exp_df['amount'].sum()
+        c3.metric("ចំណេញសុទ្ធ", f"${profit:,.2f}")
+        st.bar_chart(sales_df.groupby('product_name')['quantity'].sum())
