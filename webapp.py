@@ -202,4 +202,4 @@ if login():
                 with engine.begin() as conn:
                     conn.execute(text("TRUNCATE TABLE sales_history"))
                 st.success("បានសម្អាត!")
-                st.rerun()
+                st.rerun()# update
