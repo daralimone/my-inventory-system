@@ -56,11 +56,7 @@ def login():
     return True
 
 if login():
-    # ១. បង្កើត Connection ទៅកាន់ Google Sheets
-    try:
-        conn_gsheet = st.connection("gsheets", type=GSheetsConnection)
-    except Exception as e:
-        conn_gsheet = None
+
 
     with st.sidebar:
         st.header("📝 គ្រប់គ្រងទិន្នន័យ")
@@ -141,18 +137,7 @@ if login():
             
             col_exp1, col_exp2 = st.columns(2)
             col_exp1.download_button("📥 ទាញយកជា Excel", data=to_excel(sales_df), file_name='report.xlsx')
-            
-            # ២. បន្ថែមប៊ូតុងបញ្ជូនទៅ Google Sheets មកវិញ
-            if col_exp2.button("📤 បញ្ជូនទៅ Google Sheets"):
-                if conn_gsheet:
-                    try:
-                        conn_gsheet.update(data=sales_df)
-                        st.success("✅ បានបញ្ជូនទៅ Google Sheets រួចរាល់!")
-                    except Exception as e:
-                        st.error(f"បញ្ហា Google Sheets: {e}")
-                else:
-                    st.error("មិនអាចភ្ជាប់ទៅ Google Sheets បានទេ។ សូមពិនិត្យមើលការកំណត់ Secrets!")
-
+    
             st.subheader("📈 ក្រាហ្វិកចំណូល")
             daily_rev = sales_df.groupby(pd.to_datetime(sales_df['sale_time']).dt.date)['total_price'].sum()
             st.line_chart(daily_rev)
