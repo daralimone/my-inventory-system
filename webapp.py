@@ -4,6 +4,20 @@ import pandas as pd
 import time
 import io
 from extra_streamlit_components import CookieManager
+from fpdf import FPDF
+
+def generate_receipt(item_name, qty, price, total):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(200, 10, txt="ONE (1) STORE - RECEIPT", ln=True, align='C')
+    pdf.set_font("Arial", size=12)
+    pdf.cell(200, 10, txt=f"Item: {item_name}", ln=True)
+    pdf.cell(200, 10, txt=f"Quantity: {qty}", ln=True)
+    pdf.cell(200, 10, txt=f"Unit Price: ${price:.2f}", ln=True)
+    pdf.cell(200, 10, txt=f"Total: ${total:.2f}", ln=True)
+    pdf.cell(200, 10, txt="Thank you for shopping with us!", ln=True, align='C')
+    return pdf.output(dest='S').encode('latin-1')
 
 st.set_page_config(page_title="ប្រព័ន្ធគ្រប់គ្រងអាជីវកម្ម", layout="wide")
 cookie_manager = CookieManager()
