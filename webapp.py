@@ -118,6 +118,27 @@ if login():
             cookie_manager.delete("is_logged_in")
             st.session_state["logged_in"] = False
             st.rerun()
+            with st.sidebar:
+        # ... (កូដចាស់ៗរបស់អ្នក) ...
+        
+        st.divider()
+        st.header("💾 ការពារទិន្នន័យ")
+        
+        # មុខងារអាន File Database ជា Binary
+        try:
+            with open("business.db", "rb") as f:
+                db_binary = f.read()
+            
+            # ប៊ូតុងទាញយក File .db ផ្ទាល់តែម្ដង
+            st.download_button(
+                label="📥 Backup Database (.db)",
+                data=db_binary,
+                file_name=f"backup_business_{time.strftime('%Y%m%d_%H%M%S')}.db",
+                mime="application/octet-stream",
+                help="ទាញយក File ទិន្នន័យទាំងមូលមកទុកក្នុង iMac របស់អ្នក"
+            )
+        except Exception as e:
+            st.error("មិនទាន់មានទិន្នន័យសម្រាប់ Backup ឡើយ។")
 
     # Data Loading
     with sqlite3.connect('business.db') as conn:
