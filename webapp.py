@@ -1,11 +1,51 @@
+from sqlalchemy import create_engine, text # pyright: ignore[reportMissingImports]
 import streamlit as st
 import pandas as pd
 import time
 import io
 import requests
-from sqlalchemy import create_engine, text
 from extra_streamlit_components import CookieManager
-from fpdf import FPDF
+from fpdf import FPDF # pyright: ignore[reportMissingModuleSource]
+import psycopg2
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env
+load_dotenv()
+
+# Fetch variables
+USER = os.getenv("user")
+PASSWORD = os.getenv("password")
+HOST = os.getenv("host")
+PORT = os.getenv("port")
+DBNAME = os.getenv("dbname")
+
+# Connect to the database
+try:
+    connection = psycopg2.connect(
+        user=USER,
+        password=PASSWORD,
+        host=HOST,
+        port=PORT,
+        dbname=DBNAME
+    )
+    print("Connection successful!")
+    
+    # Create a cursor to execute SQL queries
+    cursor = connection.cursor()
+    
+    # Example query
+    cursor.execute("SELECT NOW();")
+    result = cursor.fetchone()
+    print("Current Time:", result)
+
+    # Close the cursor and connection
+    cursor.close()
+    connection.close()
+    print("Connection closed.")
+
+except Exception as e:
+    print(f"Failed to connect: {e}")
 
 # --- ១. ការភ្ជាប់ទៅកាន់ SUPABASE (CLOUD DATABASE) ---
 # ប្រាកដថាបានដាក់ [database] url ក្នុង Streamlit Secrets រួចរាល់
