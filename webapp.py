@@ -106,6 +106,14 @@ if login():
                         conn.execute("INSERT INTO products (name, stock, cost, price) VALUES (?, ?, ?, ?)", (n_name, n_stock, n_cost, n_price))
                     st.success("បានបញ្ចូលទំនិញ!")
                     st.rerun()
+            # បន្ថែមនៅខាងក្រោមគេបង្អស់នៃ Tab របាយការណ៍
+            if st.checkbox("បង្ហាញមុខងារសម្អាតទិន្នន័យ"):
+                if st.button("❌ លុបប្រវត្តិលក់ទាំងអស់", help="ប្រយ័ត្ន! វានឹងលុបគ្រប់ការលក់ទាំងអស់"):
+                    with sqlite3.connect('business.db') as conn:
+                        conn.execute("DELETE FROM sales_history")
+                        conn.commit()
+                    st.success("បានសម្អាតប្រវត្តិលក់រួចរាល់!")
+                    st.rerun()
         
         st.divider()
 
