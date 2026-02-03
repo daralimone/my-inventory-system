@@ -1,9 +1,7 @@
 streamlit
 pandas
-requests
+psycopg2-binary
+sqlalchemy
+xlsxwriter
 fpdf2
 extra-streamlit-components
-sqlalchemy
-psycopg2-binary
-python-dotenv
-xlsxwriter
