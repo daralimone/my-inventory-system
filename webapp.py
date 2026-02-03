@@ -47,17 +47,37 @@ cookie_manager = CookieManager()
 # --- ២. បង្កើតតារាងក្នុង Supabase (ប្រសិនបើមិនទាន់មាន) ---
 def init_db():
     with engine.begin() as conn:
-        # តារាងផលិតផល
-        conn.execute(text("""CREATE TABLE IF NOT EXISTS products 
-                            (id SERIAL PRIMARY KEY, name TEXT UNIQUE, stock INTEGER, cost REAL, price REAL)"""))
-        # តារាងប្រវត្តិលក់
-        conn.execute(text("""CREATE TABLE IF NOT EXISTS sales_history 
-                            (id SERIAL PRIMARY KEY, product_name TEXT, quantity INTEGER, 
-                             cost_price REAL, sale_price REAL, total_price REAL, sale_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"""))
-        # តារាងចំណាយ
-        conn.execute(text("""CREATE TABLE IF NOT EXISTS expenses 
-                            (id SERIAL PRIMARY KEY, description TEXT, amount REAL, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"""))
-
+        # បង្កើតតារាង products (ប្រើ SERIAL សម្រាប់ Auto ID)
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS products (
+                id SERIAL PRIMARY KEY, 
+                name TEXT UNIQUE, 
+                stock INTEGER, 
+                cost REAL, 
+                price REAL
+            )
+        """))
+        # បង្កើតតារាង sales_history
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS sales_history (
+                id SERIAL PRIMARY KEY, 
+                product_name TEXT, 
+                quantity INTEGER, 
+                cost_price REAL, 
+                sale_price REAL, 
+                total_price REAL, 
+                sale_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
+        # បង្កើតតារាង expenses
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS expenses (
+                id SERIAL PRIMARY KEY, 
+                description TEXT, 
+                amount REAL, 
+                date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
 init_db()
 
 # --- Login Logic ---
