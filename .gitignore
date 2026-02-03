@@ -2,3 +2,7 @@
 __pycache__/
 *.pyc
 business.db-journal
+echo ".DS_Store
+__pycache__/
+*.pyc
+business.db-journal" > .gitignore

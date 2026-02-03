@@ -1,6 +1,7 @@
 streamlit
 pandas
-extra-streamlit-components
-st-gsheets-connection
-xlsxwriter
+sqlite3
+requests
 fpdf
+extra-streamlit-components
+xlsxwriter
