@@ -109,6 +109,11 @@ if login():
         
         st.divider()
         st.header("💾 ការពារទិន្នន័យ")
+
+        if st.button("ចាកចេញ (Log out)"):
+            cookie_manager.delete("is_logged_in")
+            st.session_state["logged_in"] = False
+            st.rerun()
         try:
             with open("business.db", "rb") as f:
                 db_binary = f.read()
@@ -120,11 +125,6 @@ if login():
             )
         except:
             st.write("មិនទាន់មានទិន្នន័យសម្រាប់ Backup")
-
-        if st.button("ចាកចេញ (Log out)"):
-            cookie_manager.delete("is_logged_in")
-            st.session_state["logged_in"] = False
-            st.rerun()
 
     # --- ទាញទិន្នន័យ ---
     with sqlite3.connect('business.db') as conn:
