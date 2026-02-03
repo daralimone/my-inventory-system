@@ -9,8 +9,8 @@ from fpdf import FPDF
 
 # --- មុខងារផ្ញើសារ Telegram ---
 def send_telegram_msg(message):
-    token = "YOUR_BOT_TOKEN" # កុំភ្លេចប្ដូរ Token ផ្ទាល់ខ្លួន
-    chat_id = "YOUR_CHAT_ID" # កុំភ្លេចប្ដូរ Chat ID ផ្ទាល់ខ្លួន
+    token = "8555663996:AAExEgJFLytVVIpg7YYd0UEUkoML7mV38RM" # កុំភ្លេចប្ដូរ Token ផ្ទាល់ខ្លួន
+    chat_id = "8514197348" # កុំភ្លេចប្ដូរ Chat ID ផ្ទាល់ខ្លួន
     url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={message}"
     try:
         requests.get(url)
