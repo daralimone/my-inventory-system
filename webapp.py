@@ -77,8 +77,8 @@ def init_db():
 
 # --- ៤. ប្រព័ន្ធសុវត្ថិភាព (LOGIN) ---
 
-st.set_page_config(page_title="ប្រព័ន្ធគ្រប់គ្រងអាជីវកម្ម One (1)", layout="wide")
-cookie_manager = CookieManager()
+        st.set_page_config(page_title="ប្រព័ន្ធគ្រប់គ្រងអាជីវកម្ម One (1)", layout="wide")
+        cookie_manager = CookieManager()
 
 def login():
     if "logged_in" not in st.session_state: 
@@ -135,7 +135,7 @@ if login():
         df_sales = pd.read_sql_table("sales_history", conn)
         df_expenses = pd.read_sql_table("expenses", conn)
 
-    tab_pos, tab_inv, tab_exp, tab_rep = st.tabs(["💰 ផ្នែកលក់", "📦 ស្តុក", "💸 ចំណាយ", "📊 របាយការណ៍"])
+        tab_pos, tab_inv, tab_exp, tab_rep = st.tabs(["💰 ផ្នែកលក់", "📦 ស្តុក", "💸 ចំណាយ", "📊 របាយការណ៍"])
 
     with tab_pos:
         st.subheader("🛒 លក់ទំនិញ")
