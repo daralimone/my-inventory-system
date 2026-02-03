@@ -7,7 +7,7 @@ from sqlalchemy import create_engine, text
 from extra_streamlit_components import CookieManager
 from fpdf import FPDF
 
-# --- ១. ការរៀបចំទំព័រ (ត្រូវតែនៅខាងលើគេបង្អស់) ---
+# --- ១. ការរៀបចំទំព័រ ---
 st.set_page_config(page_title="ប្រព័ន្ធគ្រប់គ្រងអាជីវកម្ម One (1)", layout="wide")
 cookie_manager = CookieManager()
 
@@ -19,8 +19,7 @@ except Exception as e:
     st.error("សូមកំណត់ Database URL ក្នុង Secrets ឱ្យបានត្រឹមត្រូវ!")
     st.stop()
 
-# --- ៣. មុខងារជំនួយ (HELPER FUNCTIONS) ---
-
+# --- ៣. មុខងារជំនួយ ---
 def send_telegram_msg(message):
     token = "8555663996:AAExEgJFLytVVIpg7YYd0UEUkoML7mV38RM" 
     chat_id = "8514197348" 
@@ -46,37 +45,13 @@ def generate_receipt(item_name, qty, price, total):
     pdf.ln(10)
     pdf.set_font("Helvetica", size=10)
     pdf.cell(200, 10, txt="Thank you for shopping with us!", ln=True, align='C')
-    return st.pdfpdf.output(dest='S').encode('latin-1', 'ignore')
+    return pdf.output(dest='S').encode('latin-1', 'ignore')
 
-# --- ៤. ការរៀបចំ DATABASE ---
-
-def init_db():
-    with engine.begin() as conn:
-        # បន្ថែមជួរនេះដើម្បីលុបតារាងចាស់ដែលមានបញ្ហាចោល (ប្រយ័ត្ន៖ វានឹងលុបទិន្នន័យចាស់ទាំងអស់)
-        # conn.execute(text("DROP TABLE IF EXISTS sales_history CASCADE;")) 
-        
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS sales_history (
-                id SERIAL PRIMARY KEY, 
-                product_name TEXT, 
-                quantity INTEGER, 
-                cost_price REAL, 
-                sale_price REAL, 
-                total_price REAL, 
-                sale_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """))
-
-# ហៅប្រើមុខងារបង្កើតតារាង (ត្រូវនៅខាងក្រៅ function)
-init_db()
-
-# --- ៥. ប្រព័ន្ធសុវត្ថិភាព (LOGIN) ---
-
+# --- ៤. ប្រព័ន្ធសុវត្ថិភាព (LOGIN) ---
 def login():
     if "logged_in" not in st.session_state: 
         st.session_state["logged_in"] = False
     
-    # ប្រើ cookie_manager (អក្សរតូច) ដែលជា Instance
     if cookie_manager.get(cookie="is_logged_in") == "true":
         st.session_state["logged_in"] = True
 
@@ -94,8 +69,7 @@ def login():
         return False
     return True
 
-# --- ៦. ដំណើរការកម្មវិធីចម្បង ---
-
+# --- ៥. ដំណើរការកម្មវិធី ---
 if login():
     with st.sidebar:
         st.markdown("<h2 style='text-align: center;'>🏪 ហាង មួយ (១)</h2>", unsafe_allow_html=True)
@@ -149,14 +123,15 @@ if login():
                     
                     send_telegram_msg(f"🛍️ លក់៖ {selected_item} x {sale_qty} | សរុប៖ ${total_price:,.2f}")
                     st.success("លក់ជោគជ័យ!")
-                    st.download_button(label="📄 វិក្កយបត្រ (PDF)", data=generate_receipt(selected_item, sale_qty, product_data['price'], total_price), file_name=f"receipt_{selected_item}.pdf", mime="application/pdf")
+                    pdf_data = generate_receipt(selected_item, sale_qty, product_data['price'], total_price)
+                    st.download_button(label="📄 វិក្កយបត្រ (PDF)", data=pdf_data, file_name=f"receipt_{selected_item}.pdf", mime="application/pdf")
                     st.rerun()
 
     with tab_inv:
         st.subheader("📦 បញ្ជីស្តុក")
         st.dataframe(df_products, use_container_width=True)
         if not df_products.empty:
-            item_to_del = st.selectbox("លុបទំនិញ", df_products['name'])
+            item_to_del = st.selectbox("លុបទំនិញ", df_products['name'], key="del_box")
             if st.button("លុបចោល"):
                 with engine.begin() as conn:
                     conn.execute(text("DELETE FROM products WHERE name = :n"), {"n": item_to_del})
@@ -180,7 +155,6 @@ if login():
         cogs = (df_sales['cost_price'] * df_sales['quantity']).sum() if not df_sales.empty else 0
         st.metric("ចំណេញសុទ្ធ", f"${(rev - cogs - exp):,.2f}")
         
-        # ប៊ូតុង Excel
         buffer = io.BytesIO()
         with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
             df_sales.to_excel(writer, sheet_name='Sales', index=False)
