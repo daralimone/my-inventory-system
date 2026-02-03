@@ -7,11 +7,7 @@ import requests
 from extra_streamlit_components import CookieManager
 from fpdf import FPDF # pyright: ignore[reportMissingModuleSource]
 import psycopg2 # pyright: ignore[reportMissingModuleSource]
-from dotenv import load_dotenv # pyright: ignore[reportMissingImports]
 import os
-
-# Load environment variables from .env
-load_dotenv()
 
 # Fetch variables
 USER = os.getenv("user")
