@@ -21,20 +21,26 @@ def send_telegram_msg(message):
 def generate_receipt(item_name, qty, price, total):
     pdf = FPDF()
     pdf.add_page()
-    pdf.add_font('Arial', '', 'Helvetica', uni=True) # ប្រើ Font ដែល Support លេខ និងអក្សរឡាតាំងបានល្អ
-    pdf.set_font("Arial", 'B', 16)
+    
+    # ប្រើ Font 'Arial' ឬ 'Helvetica' ដែលជា Standard Fonts របស់ PDF
+    # វាមិនត្រូវការឯកសារ Font ខាងក្រៅទេ ដូច្នេះវានឹងមិន Error ឡើយ
+    pdf.set_font("Helvetica", 'B', 16)
     pdf.cell(200, 10, txt="ONE (1) STORE - RECEIPT", ln=True, align='C')
     pdf.ln(10)
-    pdf.set_font("Arial", size=12)
+    
+    pdf.set_font("Helvetica", size=12)
     pdf.cell(200, 10, txt=f"Date: {time.strftime('%Y-%m-%d %H:%M:%S')}", ln=True)
     pdf.cell(200, 10, txt=f"Item: {item_name}", ln=True)
     pdf.cell(200, 10, txt=f"Quantity: {qty}", ln=True)
     pdf.cell(200, 10, txt=f"Unit Price: ${price:.2f}", ln=True)
-    pdf.set_font("Arial", 'B', 14)
+    
+    pdf.set_font("Helvetica", 'B', 14)
     pdf.cell(200, 10, txt=f"Total Amount: ${total:.2f}", ln=True)
     pdf.ln(10)
-    pdf.set_font("Arial", size=10)
+    
+    pdf.set_font("Helvetica", size=10)
     pdf.cell(200, 10, txt="Thank you for shopping with us!", ln=True, align='C')
+    
     return pdf.output(dest='S').encode('latin-1', 'ignore')
 
 st.set_page_config(page_title="ប្រព័ន្ធគ្រប់គ្រងអាជីវកម្ម", layout="wide")
