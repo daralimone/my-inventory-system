@@ -193,4 +193,4 @@ def login():
         with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
             df_sales.to_excel(writer, sheet_name='Sales', index=False)
             df_products.to_excel(writer, sheet_name='Stock', index=False)
-        st.download_button(label="📊 ទាញយក Excel", data=buffer.getvalue(), file_name="report.xlsx")
+        st.download_button(label="📊 ទាញយក Excel", data=buffer.getvalue(), file_name="report.xlsx") 
