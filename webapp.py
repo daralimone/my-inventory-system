@@ -3,9 +3,21 @@ import sqlite3
 import pandas as pd
 import time
 import io
+import requests
 from extra_streamlit_components import CookieManager
 from fpdf import FPDF
 
+# --- មុខងារផ្ញើសារ Telegram ---
+def send_telegram_msg(message):
+    token = "YOUR_BOT_TOKEN" # ប្ដូរទីនេះ
+    chat_id = "YOUR_CHAT_ID" # ប្ដូរទីនេះ
+    url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={message}"
+    try:
+        requests.get(url)
+    except:
+        pass
+
+# --- មុខងារបង្កើតវិក្កយបត្រ PDF ---
 def generate_receipt(item_name, qty, price, total):
     pdf = FPDF()
     pdf.add_page()
@@ -22,38 +34,29 @@ def generate_receipt(item_name, qty, price, total):
 st.set_page_config(page_title="ប្រព័ន្ធគ្រប់គ្រងអាជីវកម្ម", layout="wide")
 cookie_manager = CookieManager()
 
+# --- បង្កើត Database ---
 def init_db():
     conn = sqlite3.connect('business.db')
     cursor = conn.cursor()
-    # តារាងផលិតផល (មានស្រាប់)
     cursor.execute('''CREATE TABLE IF NOT EXISTS products 
                       (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, stock INTEGER, cost REAL, price REAL)''')
-    # តារាងប្រវត្តិលក់ (មានស្រាប់)
     cursor.execute('''CREATE TABLE IF NOT EXISTS sales_history 
                       (id INTEGER PRIMARY KEY AUTOINCREMENT, product_name TEXT, quantity INTEGER, 
                        cost_price REAL, sale_price REAL, total_price REAL, sale_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
-    
-    # បន្ថែមតារាងចំណាយថ្មី (ដាក់ចូលត្រង់នេះ)
     cursor.execute('''CREATE TABLE IF NOT EXISTS expenses 
                       (id INTEGER PRIMARY KEY AUTOINCREMENT, description TEXT, amount REAL, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
-    
     conn.commit()
     conn.close()
 
 init_db()
 
-def to_excel(df):
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Sheet1')
-    return output.getvalue()
-
+# --- Login Logic ---
 def login():
     try:
         CORRECT_USER = st.secrets["credentials"]["username"]
         CORRECT_PASS = st.secrets["credentials"]["password"]
     except:
-        st.error("សូមកំណត់ Secrets (credentials) ក្នុង Streamlit Cloud!")
+        st.error("សូមកំណត់ Secrets ក្នុង Streamlit Cloud!")
         return False
     
     if "logged_in" not in st.session_state: 
@@ -75,53 +78,37 @@ def login():
         return False
     return True
 
-# ចាប់ផ្ដើមដំណើរការកម្មវិធីចម្បង
 if login():
+    # --- Sidebar UI ---
     with st.sidebar:
-        # ប្រើ CSS ដើម្បីបង្ខំឱ្យរូបភាព និងអក្សរទាំងអស់ក្នុង Sidebar នៅចំកណ្ដាល
-        # បន្ថែម CSS នេះក្នុងផ្នែក st.markdown ខាងលើ
         st.markdown("""
             <style>
-            .stButton>button {
-                width: 100%;
-                border-radius: 5px;
-                height: 3em;
-                background-color: #007bff;
-                color: white;
-            }
+            .stButton>button { width: 100%; border-radius: 5px; height: 3em; background-color: #007bff; color: white; }
+            .centered-container { display: flex; flex-direction: column; align-items: center; text-align: center; }
             </style>
             """, unsafe_allow_html=True)
 
-        # ចាប់ផ្ដើមដាក់ Logo និង ឈ្មោះក្នុង Container ដែលយើងបានកំណត់ CSS មិញ
         with st.container():
             st.markdown('<div class="centered-container">', unsafe_allow_html=True)
-            
             try:
-                # បង្ហាញ Logo
                 st.image("logo.png", width=120)
             except:
                 st.write("🖼️")
-                
-            # បង្ហាញឈ្មោះហាង "មួយ (១)"
-            st.markdown("<h1 style='font-size: 25px; margin-top: 0;'>មួយ (១)</h1>", unsafe_allow_html=True)
-            
+            st.markdown("<h1 style='font-size: 25px;'>មួយ (១)</h1>", unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         st.divider()
-        
-        st.header("📝 គ្រប់គ្រងទិន្នន័យ")
+        st.header("📝 បន្ថែមទំនិញថ្មី")
         with st.form("add_product", clear_on_submit=True):
             n_name = st.text_input("ឈ្មោះទំនិញ")
             n_stock = st.number_input("ចំនួនស្តុក", min_value=0)
             n_cost = st.number_input("តម្លៃដើម ($)", min_value=0.0)
             n_price = st.number_input("តម្លៃលក់ ($)", min_value=0.0)
-            if st.form_submit_button("បញ្ចូលទំនិញថ្មី"):
+            if st.form_submit_button("បញ្ចូលទំនិញ"):
                 if n_name:
                     with sqlite3.connect('business.db') as conn:
-                        cursor = conn.cursor()
-                        cursor.execute("INSERT INTO products (name, stock, cost, price) VALUES (?, ?, ?, ?)", 
+                        conn.execute("INSERT INTO products (name, stock, cost, price) VALUES (?, ?, ?, ?)", 
                                        (n_name, n_stock, n_cost, n_price))
-                        conn.commit()
                     st.rerun()
         
         if st.button("ចាកចេញ (Log out)"):
@@ -129,29 +116,34 @@ if login():
             st.session_state["logged_in"] = False
             st.rerun()
 
-    # ទាញទិន្នន័យពី SQLite
+    # --- ទាញទិន្នន័យ ---
     with sqlite3.connect('business.db') as conn:
         df = pd.read_sql_query("SELECT * FROM products", conn)
         sales_df = pd.read_sql_query("SELECT * FROM sales_history ORDER BY sale_time DESC", conn)
+        exp_df = pd.read_sql_query("SELECT * FROM expenses ORDER BY date DESC", conn)
 
-    tab_pos, tab_inv, tab_rep = st.tabs(["💰 ផ្នែកលក់ (POS)", "📦 ស្តុកទំនិញ", "📊 របាយការណ៍"])
+    # --- Tabs ---
+    tab_pos, tab_inv, tab_exp, tab_rep = st.tabs(["💰 ផ្នែកលក់ (POS)", "📦 ស្តុកទំនិញ", "💸 ចំណាយ", "📊 របាយការណ៍"])
 
     with tab_pos:
-        st.subheader("លក់ទំនិញចេញ")
+        st.subheader("🛒 លក់ទំនិញចេញ")
         if not df.empty:
             col1, col2 = st.columns(2)
             item = col1.selectbox("រើសទំនិញ", df['name'])
             qty = col2.number_input("ចំនួនលក់", min_value=1, step=1)
             cur = df[df['name'] == item].iloc[0]
             
-            if st.button(f"លក់ {item} (សរុប: ${qty*cur['price']:,.2f})"):
+            if st.button(f"បញ្ជាក់ការលក់ (សរុប: ${qty*cur['price']:,.2f})"):
                 if cur['stock'] >= qty:
                     with sqlite3.connect('business.db') as conn:
-                        cursor = conn.cursor()
-                        cursor.execute("UPDATE products SET stock = stock - ? WHERE name = ?", (qty, item))
-                        cursor.execute("INSERT INTO sales_history (product_name, quantity, cost_price, sale_price, total_price) VALUES (?, ?, ?, ?, ?)", 
+                        conn.execute("UPDATE products SET stock = stock - ? WHERE name = ?", (qty, item))
+                        conn.execute("INSERT INTO sales_history (product_name, quantity, cost_price, sale_price, total_price) VALUES (?, ?, ?, ?, ?)", 
                                        (item, qty, cur['cost'], cur['price'], qty*cur['price']))
-                        conn.commit()
+                    
+                    # ផ្ញើសារ Telegram ក្រោយលក់ជោគជ័យ
+                    msg = f"🛍️ ការលក់ថ្មី៖ {item} \n🔢 ចំនួន៖ {qty} \n💰 សរុប៖ ${qty*cur['price']:,.2f}"
+                    send_telegram_msg(msg)
+                    
                     st.success(f"បានលក់ {item} រួចរាល់!")
                     time.sleep(1)
                     st.rerun()
@@ -161,34 +153,30 @@ if login():
     with tab_inv:
         st.subheader("📦 បញ្ជីទំនិញក្នុងស្តុក")
         search = st.text_input("🔍 ស្វែងរកក្នុងស្តុក...")
-        
-        # តម្រងស្វែងរក
         display_df = df[df['name'].str.contains(search, case=False)] if search else df
         
-        # បង្កើត Function សម្រាប់ដាក់ពណ៌ព្រមាន (បើតិចជាង ៥ ឱ្យចេញពណ៌ក្រហម)
         def highlight_low_stock(row):
             return ['background-color: #ffcccc' if row.stock < 5 else '' for _ in row]
 
-        if not display_df.empty:
-            # បង្ហាញតារាងដែលមានការដាក់ពណ៌
-            st.dataframe(display_df.style.apply(highlight_low_stock, axis=1), use_container_width=True)
-        else:
-            st.info("មិនមានទំនិញក្នុងបញ្ជីឡើយ។")
+        st.dataframe(display_df.style.apply(highlight_low_stock, axis=1), use_container_width=True)
 
     with tab_exp:
-        # ... (កូដសម្រាប់បញ្ចូលចំណាយមានស្រាប់) ...
-        st.divider()
-        st.subheader("📜 ប្រវត្តិចំណាយ និងការគ្រប់គ្រង")
-        
-        if not exp_df.empty:
-            # បង្ហាញតារាងចំណាយ
-            st.dataframe(exp_df, use_container_width=True)
-            
-            # ប៊ូតុងសម្រាប់លុបចំណាយចុងក្រោយបង្អស់ (ឬតាម ID)
-            exp_id_to_del = st.number_input("បញ្ចូល ID ចំណាយដែលចង់លុប", min_value=1, step=1)
-            if st.button("លុបចំណាយនេះ", type="secondary"):
-                with sqlite3.connect('business.db') as conn:
-                    conn.execute("DELETE FROM expenses WHERE id = ?", (exp_id_to_del,))
-                    conn.commit()
-                st.success(f"បានលុបចំណាយ ID {exp_id_to_del} រួចរាល់!")
-                st.rerun()
+        st.subheader("💸 គ្រប់គ្រងចំណាយ")
+        with st.form("expense_form", clear_on_submit=True):
+            ex_desc = st.text_input("ពិពណ៌នាចំណាយ")
+            ex_amt = st.number_input("ចំនួនទឹកប្រាក់ ($)", min_value=0.0)
+            if st.form_submit_button("រក្សាទុកចំណាយ"):
+                if ex_desc and ex_amt > 0:
+                    with sqlite3.connect('business.db') as conn:
+                        conn.execute("INSERT INTO expenses (description, amount) VALUES (?, ?)", (ex_desc, ex_amt))
+                    st.rerun()
+        st.dataframe(exp_df, use_container_width=True)
+
+    with tab_rep:
+        st.subheader("📊 របាយការណ៍អាជីវកម្ម")
+        if not sales_df.empty:
+            total_rev = sales_df['total_price'].sum()
+            total_exp = exp_df['amount'].sum() if not exp_df.empty else 0
+            st.metric("ចំណូលសរុប", f"${total_rev:,.2f}")
+            st.metric("ចំណាយសរុប", f"${total_exp:,.2f}")
+            st.bar_chart(sales_df.groupby('product_name')['quantity'].sum())
