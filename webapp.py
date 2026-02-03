@@ -4,7 +4,6 @@ import pandas as pd
 import time
 import io
 from extra_streamlit_components import CookieManager
-# បន្ថែមបណ្ណាល័យ Google Sheets មកវិញ
 
 st.set_page_config(page_title="ប្រព័ន្ធគ្រប់គ្រងអាជីវកម្ម", layout="wide")
 cookie_manager = CookieManager()
@@ -55,13 +54,14 @@ def login():
         return False
     return True
 
+# ចាប់ផ្ដើមដំណើរការកម្មវិធីចម្បង
 if login():
-
-
-    # ឧទាហរណ៍៖ បន្ថែមរូបភាព Logo ក្នុង Sidebar
-with st.sidebar:
-    st.image("https://scontent-ams2-1.xx.fbcdn.net/v/t39.30808-6/616852928_1482523783878367_9007683925897413730_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=hkJ9o0otzd0Q7kNvwFh8E_0&_nc_oc=AdlhXgG1fUL2U928bjoqnc1mbK6q6kj5VZ9GV0n4nlYUU7ST2zkvVczih-lZsiU3fe_Lim-Siw57v-8Bud-iwTfY&_nc_zt=23&_nc_ht=scontent-ams2-1.xx&_nc_gid=uCN-lQ4gIIcV3sExa7R3-Q&oh=00_AfvHGs6tCVQXUFa1ZrztUegPWshZH6fRm6F5GQ0OibcPsQ&oe=6986F8A7", width=100)
-    st.title("One")
+    with st.sidebar:
+        # បង្ហាញ Logo និងឈ្មោះហាង One
+        st.image("https://scontent-ams2-1.xx.fbcdn.net/v/t39.30808-6/616852928_1482523783878367_9007683925897413730_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=hkJ9o0otzd0Q7kNvwFh8E_0&_nc_oc=AdlhXgG1fUL2U928bjoqnc1mbK6q6kj5VZ9GV0n4nlYUU7ST2zkvVczih-lZsiU3fe_Lim-Siw57v-8Bud-iwTfY&_nc_zt=23&_nc_ht=scontent-ams2-1.xx&_nc_gid=uCN-lQ4gIIcV3sExa7R3-Q&oh=00_AfvHGs6tCVQXUFa1ZrztUegPWshZH6fRm6F5GQ0OibcPsQ&oe=6986F8A7", width=100)
+        st.title("One Store")
+        
+        st.header("📝 គ្រប់គ្រងទិន្នន័យ")
         with st.form("add_product", clear_on_submit=True):
             n_name = st.text_input("ឈ្មោះទំនិញ")
             n_stock = st.number_input("ចំនួនស្តុក", min_value=0)
@@ -81,6 +81,7 @@ with st.sidebar:
             st.session_state["logged_in"] = False
             st.rerun()
 
+    # ទាញទិន្នន័យពី SQLite
     with sqlite3.connect('business.db') as conn:
         df = pd.read_sql_query("SELECT * FROM products", conn)
         sales_df = pd.read_sql_query("SELECT * FROM sales_history ORDER BY sale_time DESC", conn)
@@ -136,9 +137,7 @@ with st.sidebar:
             c3.metric("ចំណេញសុទ្ធ", f"${total_prof:,.2f}")
 
             st.divider()
-            
-            col_exp1, col_exp2 = st.columns(2)
-            col_exp1.download_button("📥 ទាញយកជា Excel", data=to_excel(sales_df), file_name='report.xlsx')
+            st.download_button("📥 ទាញយកជា Excel", data=to_excel(sales_df), file_name='report.xlsx')
     
             st.subheader("📈 ក្រាហ្វិកចំណូល")
             daily_rev = sales_df.groupby(pd.to_datetime(sales_df['sale_time']).dt.date)['total_price'].sum()
