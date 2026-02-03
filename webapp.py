@@ -179,16 +179,16 @@ if login():
 
     with tab_rep:
         with tab_rep:
-        if not sales_df.empty:
-            # ... (កូដចាស់សម្រាប់បង្ហាញ Metric ដើមទុន និងចំណេញ) ...
+             if not sales_df.empty:
+                # ... (កូដចាស់សម្រាប់បង្ហាញ Metric ដើមទុន និងចំណេញ) ...
 
-            st.divider()
-            
-            # បង្កើតក្រាហ្វិកបង្ហាញទំនិញដែលលក់ដាច់បំផុត ៥ មុខដំបូង
-            st.subheader("🏆 ទំនិញដែលលក់ដាច់បំផុត (Top 5)")
-            top_sales = sales_df.groupby('product_name')['quantity'].sum().sort_values(ascending=False).head(5)
-            st.bar_chart(top_sales)
-            
-            # បង្ហាញតារាងប្រវត្តិលក់លម្អិត
-            st.subheader("📜 ប្រវត្តិលក់លម្អិត")
-            st.dataframe(sales_df, use_container_width=True)
+                st.divider()
+                
+                # បង្កើតក្រាហ្វិកបង្ហាញទំនិញដែលលក់ដាច់បំផុត ៥ មុខដំបូង
+                st.subheader("🏆 ទំនិញដែលលក់ដាច់បំផុត (Top 5)")
+                top_sales = sales_df.groupby('product_name')['quantity'].sum().sort_values(ascending=False).head(5)
+                st.bar_chart(top_sales)
+                
+                # បង្ហាញតារាងប្រវត្តិលក់លម្អិត
+                st.subheader("📜 ប្រវត្តិលក់លម្អិត")
+                st.dataframe(sales_df, use_container_width=True)
