@@ -147,18 +147,21 @@ if login():
                     st.error("ស្តុកមិនគ្រប់គ្រាន់!")
 
     with tab_inv:
+        st.subheader("📦 បញ្ជីទំនិញក្នុងស្តុក")
         search = st.text_input("🔍 ស្វែងរកក្នុងស្តុក...")
-        display_df = df[df['name'].str.contains(search, case=False)] if search else df
-        st.dataframe(display_df, use_container_width=True)
         
+        # តម្រងស្វែងរក
+        display_df = df[df['name'].str.contains(search, case=False)] if search else df
+        
+        # បង្កើត Function សម្រាប់ដាក់ពណ៌ព្រមាន (បើតិចជាង ៥ ឱ្យចេញពណ៌ក្រហម)
+        def highlight_low_stock(row):
+            return ['background-color: #ffcccc' if row.stock < 5 else '' for _ in row]
+
         if not display_df.empty:
-            to_del = st.selectbox("លុបទំនិញ", display_df['name'])
-            if st.button("បញ្ជាក់ការលុប", type="primary"):
-                with sqlite3.connect('business.db') as conn:
-                    cursor = conn.cursor()
-                    cursor.execute("DELETE FROM products WHERE name=?", (to_del,))
-                    conn.commit()
-                st.rerun()
+            # បង្ហាញតារាងដែលមានការដាក់ពណ៌
+            st.dataframe(display_df.style.apply(highlight_low_stock, axis=1), use_container_width=True)
+        else:
+            st.info("មិនមានទំនិញក្នុងបញ្ជីឡើយ។")
 
     with tab_rep:
         if not sales_df.empty:
