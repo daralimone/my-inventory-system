@@ -84,7 +84,7 @@ def login():
     if "logged_in" not in st.session_state: 
         st.session_state["logged_in"] = False
     
-    if cookie_manager.get(cookie="is_logged_in") == "true": 
+    if CookieManager.get(cookie="is_logged_in") == "true": 
         st.session_state["logged_in"] = True
 
     if not st.session_state["logged_in"]:
@@ -94,7 +94,7 @@ def login():
         if st.button("ចូលប្រើ"):
             # កែសម្រួលឱ្យហៅតាម Key 'username' និង 'password' ក្នុង Secrets
             if u == st.secrets["credentials"]["username"] and p == st.secrets["credentials"]["password"]:
-                cookie_manager.set("is_logged_in", "true", max_age=86400)
+                CookieManager.set("is_logged_in", "true", max_age=86400)
                 st.session_state["logged_in"] = True
                 st.rerun()
             else:
@@ -125,7 +125,7 @@ if login():
                         st.error("ឈ្មោះទំនិញនេះមានរួចហើយ!")
 
         if st.button("ចាកចេញ (Log out)"):
-            cookie_manager.delete("is_logged_in")
+            CookieManager.delete("is_logged_in")
             st.session_state["logged_in"] = False
             st.rerun()
 
