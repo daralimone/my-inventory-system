@@ -57,18 +57,44 @@ def login():
 # ចាប់ផ្ដើមដំណើរការកម្មវិធីចម្បង
 if login():
     with st.sidebar:
-        # បង្កើត Column ចំនួន ៣ ដោយឱ្យ Column កណ្ដាលធំជាងគេ
-        col1, col2, col3 = st.columns([0.5, 1, 0.5]) 
-        
-        with col2:
-            try:
-                st.image("logo.png", width=120) # បង្ហាញ Logo ក្នុង Column កណ្ដាល
-            except:
-                st.write("🖼️") # បង្ហាញ Icon ជំនួសបើរករូបមិនឃើញ
+        # ប្រើ CSS ដើម្បីបង្ខំឱ្យរូបភាព និងអក្សរទាំងអស់ក្នុង Sidebar នៅចំកណ្ដាល
+        st.markdown(
+            """
+            <style>
+                [data-testid="stSidebarNav"] {
+                    display: none;
+                }
+                .centered-container {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
+                }
+                .centered-container img {
+                    border-radius: 10px; /* ធ្វើឱ្យជ្រុងរូបភាពមូលបន្តិចឱ្យស្អាត */
+                    margin-bottom: 10px;
+                }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
 
-        # បង្ហាញឈ្មោះហាងនៅខាងក្រោម Logo និងឱ្យនៅចំកណ្ដាល
-        st.markdown("<h1 style='text-align: center; font-size: 25px;'>មួយ (១)</h1>", unsafe_allow_html=True)
-        
+        # ចាប់ផ្ដើមដាក់ Logo និង ឈ្មោះក្នុង Container ដែលយើងបានកំណត់ CSS មិញ
+        with st.container():
+            st.markdown('<div class="centered-container">', unsafe_allow_html=True)
+            
+            try:
+                # បង្ហាញ Logo
+                st.image("logo.png", width=120)
+            except:
+                st.write("🖼️")
+                
+            # បង្ហាញឈ្មោះហាង "មួយ (១)"
+            st.markdown("<h1 style='font-size: 25px; margin-top: 0;'>មួយ (១)</h1>", unsafe_allow_html=True)
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+
         st.divider()
         
         st.header("📝 គ្រប់គ្រងទិន្នន័យ")
