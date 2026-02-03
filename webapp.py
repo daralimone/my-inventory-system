@@ -59,7 +59,7 @@ if login():
     with st.sidebar:
         try:
     # ប្រសិនបើអ្នកមាន file រូបភាពឈ្មោះ logo.jpg ក្នុង folder តែមួយ
-            st.image("One (cycle).png", width=100) 
+            st.image("logo.png", width=100) 
         except:
     # បើរកមិនឃើញ ឱ្យវាបង្ហាញត្រឹមឈ្មោះហាង កុំឱ្យវា Error គាំង App
             st.title("មួយ (១)")
