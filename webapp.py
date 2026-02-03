@@ -25,11 +25,18 @@ cookie_manager = CookieManager()
 def init_db():
     conn = sqlite3.connect('business.db')
     cursor = conn.cursor()
+    # តារាងផលិតផល (មានស្រាប់)
     cursor.execute('''CREATE TABLE IF NOT EXISTS products 
                       (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, stock INTEGER, cost REAL, price REAL)''')
+    # តារាងប្រវត្តិលក់ (មានស្រាប់)
     cursor.execute('''CREATE TABLE IF NOT EXISTS sales_history 
                       (id INTEGER PRIMARY KEY AUTOINCREMENT, product_name TEXT, quantity INTEGER, 
                        cost_price REAL, sale_price REAL, total_price REAL, sale_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    
+    # បន្ថែមតារាងចំណាយថ្មី (ដាក់ចូលត្រង់នេះ)
+    cursor.execute('''CREATE TABLE IF NOT EXISTS expenses 
+                      (id INTEGER PRIMARY KEY AUTOINCREMENT, description TEXT, amount REAL, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    
     conn.commit()
     conn.close()
 
