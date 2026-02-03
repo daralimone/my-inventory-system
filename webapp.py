@@ -178,20 +178,17 @@ if login():
             st.info("មិនមានទំនិញក្នុងបញ្ជីឡើយ។")
 
     with tab_rep:
+        with tab_rep:
         if not sales_df.empty:
-            sales_df['profit'] = (sales_df['sale_price'] - sales_df['cost_price']) * sales_df['quantity']
-            total_rev = sales_df['total_price'].sum()
-            total_prof = sales_df['profit'].sum()
-            c_inv_val = (df['stock'] * df['cost']).sum()
-
-            c1, c2, c3 = st.columns(3)
-            c1.metric("ដើមទុនក្នុងស្តុក", f"${c_inv_val:,.2f}")
-            c2.metric("ចំណូលសរុប", f"${total_rev:,.2f}")
-            c3.metric("ចំណេញសុទ្ធ", f"${total_prof:,.2f}")
+            # ... (កូដចាស់សម្រាប់បង្ហាញ Metric ដើមទុន និងចំណេញ) ...
 
             st.divider()
-            st.download_button("📥 ទាញយកជា Excel", data=to_excel(sales_df), file_name='report.xlsx')
-    
-            st.subheader("📈 ក្រាហ្វិកចំណូល")
-            daily_rev = sales_df.groupby(pd.to_datetime(sales_df['sale_time']).dt.date)['total_price'].sum()
-            st.line_chart(daily_rev)
+            
+            # បង្កើតក្រាហ្វិកបង្ហាញទំនិញដែលលក់ដាច់បំផុត ៥ មុខដំបូង
+            st.subheader("🏆 ទំនិញដែលលក់ដាច់បំផុត (Top 5)")
+            top_sales = sales_df.groupby('product_name')['quantity'].sum().sort_values(ascending=False).head(5)
+            st.bar_chart(top_sales)
+            
+            # បង្ហាញតារាងប្រវត្តិលក់លម្អិត
+            st.subheader("📜 ប្រវត្តិលក់លម្អិត")
+            st.dataframe(sales_df, use_container_width=True)
