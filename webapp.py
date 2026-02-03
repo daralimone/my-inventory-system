@@ -184,61 +184,20 @@ if login():
         else:
             st.info("មិនមានទំនិញក្នុងបញ្ជីឡើយ។")
 
-    with tab_rep:
-        with tab_rep:
-            with sqlite3.connect('business.db') as conn:
-                sales_df = pd.read_sql_query("SELECT * FROM sales_history", conn)
-                expenses_df = pd.read_sql_query("SELECT * FROM expenses", conn)
-                products_df = pd.read_sql_query("SELECT * FROM products", conn)
-
-            if not sales_df.empty:
-                # ១. គណនាចំណូល និងតម្លៃដើមសរុប
-                total_rev = sales_df['total_price'].sum()
-                total_cost_of_sales = (sales_df['cost_price'] * sales_df['quantity']).sum()
-                
-                # ២. គណនាចំណាយផ្សេងៗ (ពី Tab ចំណាយ)
-                total_expenses = expenses_df['amount'].sum() if not expenses_df.empty else 0
-                
-                # ៣. គណនាចំណេញសុទ្ធពិតប្រាកដ
-                net_profit = total_rev - total_cost_of_sales - total_expenses
-                
-                # ៤. គណនាដម្លៃទំនិញដែលនៅសល់ក្នុងស្តុក
-                inventory_value = (products_df['stock'] * products_df['cost']).sum()
-
-                # បង្ហាញ Metric ជា ៤ ប្រអប់
-                c1, c2, c3, c4 = st.columns(4)
-                c1.metric("ដើមទុនក្នុងស្តុក", f"${inventory_value:,.2f}")
-                c2.metric("ចំណូលសរុប", f"${total_rev:,.2f}")
-                c3.metric("ចំណាយផ្សេងៗ", f"${total_expenses:,.2f}", delta_color="inverse")
-                c4.metric("ចំណេញសុទ្ធពិត", f"${net_profit:,.2f}")
-
-                st.divider()
-                # បង្ហាញក្រាហ្វិកប្រៀបធៀប ចំណូល និង ចំណាយ
-                st.subheader("📈 ការប្រៀបធៀបចំណូល និង ចំណាយ")
-                comparison_data = pd.DataFrame({
-                    'ប្រភេទ': ['ចំណូលសរុប', 'ចំណាយសរុប'],
-                    'ចំនួនទឹកប្រាក់ ($)': [total_rev, total_expenses + total_cost_of_sales]
-                })
-                st.bar_chart(comparison_data.set_index('ប្រភេទ'))
-
     with tab_exp:
-        st.subheader("📝 កត់ត្រាចំណាយថ្មី")
-        with st.form("expense_form", clear_on_submit=True):
-            ex_desc = st.text_input("ពណ៌នាពីការចំណាយ (ឧ៖ ថ្លៃភ្លើង, ថ្លៃជួលតូប...)")
-            ex_amount = st.number_input("ចំនួនទឹកប្រាក់ ($)", min_value=0.0, format="%.2f")
-            if st.form_submit_button("រក្សាទុកចំណាយ"):
-                if ex_desc and ex_amount > 0:
-                    with sqlite3.connect('business.db') as conn:
-                        cursor = conn.cursor()
-                        cursor.execute("INSERT INTO expenses (description, amount) VALUES (?, ?)", (ex_desc, ex_amount))
-                        conn.commit()
-                    st.success("បានកត់ត្រាចំណាយរួចរាល់!")
-                    st.rerun()
-                else:
-                    st.warning("សូមបំពេញព័ត៌មានឱ្យបានគ្រប់គ្រាន់!")
-
+        # ... (កូដសម្រាប់បញ្ចូលចំណាយមានស្រាប់) ...
         st.divider()
-        st.subheader("📜 ប្រវត្តិចំណាយ")
-        with sqlite3.connect('business.db') as conn:
-            exp_df = pd.read_sql_query("SELECT * FROM expenses ORDER BY date DESC", conn)
+        st.subheader("📜 ប្រវត្តិចំណាយ និងការគ្រប់គ្រង")
+        
+        if not exp_df.empty:
+            # បង្ហាញតារាងចំណាយ
             st.dataframe(exp_df, use_container_width=True)
+            
+            # ប៊ូតុងសម្រាប់លុបចំណាយចុងក្រោយបង្អស់ (ឬតាម ID)
+            exp_id_to_del = st.number_input("បញ្ចូល ID ចំណាយដែលចង់លុប", min_value=1, step=1)
+            if st.button("លុបចំណាយនេះ", type="secondary"):
+                with sqlite3.connect('business.db') as conn:
+                    conn.execute("DELETE FROM expenses WHERE id = ?", (exp_id_to_del,))
+                    conn.commit()
+                st.success(f"បានលុបចំណាយ ID {exp_id_to_del} រួចរាល់!")
+                st.rerun()
