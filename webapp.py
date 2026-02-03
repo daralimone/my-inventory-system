@@ -186,21 +186,40 @@ if login():
 
     with tab_rep:
         with tab_rep:
-             if not sales_df.empty:
-                # ... (កូដចាស់សម្រាប់បង្ហាញ Metric ដើមទុន និងចំណេញ) ...
+            with sqlite3.connect('business.db') as conn:
+                sales_df = pd.read_sql_query("SELECT * FROM sales_history", conn)
+                expenses_df = pd.read_sql_query("SELECT * FROM expenses", conn)
+                products_df = pd.read_sql_query("SELECT * FROM products", conn)
+
+            if not sales_df.empty:
+                # ១. គណនាចំណូល និងតម្លៃដើមសរុប
+                total_rev = sales_df['total_price'].sum()
+                total_cost_of_sales = (sales_df['cost_price'] * sales_df['quantity']).sum()
+                
+                # ២. គណនាចំណាយផ្សេងៗ (ពី Tab ចំណាយ)
+                total_expenses = expenses_df['amount'].sum() if not expenses_df.empty else 0
+                
+                # ៣. គណនាចំណេញសុទ្ធពិតប្រាកដ
+                net_profit = total_rev - total_cost_of_sales - total_expenses
+                
+                # ៤. គណនាដម្លៃទំនិញដែលនៅសល់ក្នុងស្តុក
+                inventory_value = (products_df['stock'] * products_df['cost']).sum()
+
+                # បង្ហាញ Metric ជា ៤ ប្រអប់
+                c1, c2, c3, c4 = st.columns(4)
+                c1.metric("ដើមទុនក្នុងស្តុក", f"${inventory_value:,.2f}")
+                c2.metric("ចំណូលសរុប", f"${total_rev:,.2f}")
+                c3.metric("ចំណាយផ្សេងៗ", f"${total_expenses:,.2f}", delta_color="inverse")
+                c4.metric("ចំណេញសុទ្ធពិត", f"${net_profit:,.2f}")
 
                 st.divider()
-                
-                # បង្កើតក្រាហ្វិកបង្ហាញទំនិញដែលលក់ដាច់បំផុត ៥ មុខដំបូង
-                st.subheader("🏆 ទំនិញដែលលក់ដាច់បំផុត (Top 5)")
-                top_sales = sales_df.groupby('product_name')['quantity'].sum().sort_values(ascending=False).head(5)
-                st.bar_chart(top_sales)
-                
-                # បង្ហាញតារាងប្រវត្តិលក់លម្អិត
-                st.subheader("📜 ប្រវត្តិលក់លម្អិត")
-                st.dataframe(sales_df, use_container_width=True)
-    # បន្ថែម Tab ថ្មីឈ្មោះ "💸 ចំណាយ"
-tab_pos, tab_inv, tab_rep, tab_exp = st.tabs(["💰 ផ្នែកលក់ (POS)", "📦 ស្តុកទំនិញ", "📊 របាយការណ៍", "💸 ចំណាយ"])
+                # បង្ហាញក្រាហ្វិកប្រៀបធៀប ចំណូល និង ចំណាយ
+                st.subheader("📈 ការប្រៀបធៀបចំណូល និង ចំណាយ")
+                comparison_data = pd.DataFrame({
+                    'ប្រភេទ': ['ចំណូលសរុប', 'ចំណាយសរុប'],
+                    'ចំនួនទឹកប្រាក់ ($)': [total_rev, total_expenses + total_cost_of_sales]
+                })
+                st.bar_chart(comparison_data.set_index('ប្រភេទ'))
 
     with tab_exp:
         st.subheader("📝 កត់ត្រាចំណាយថ្មី")
